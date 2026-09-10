@@ -36,7 +36,15 @@ function register(router) {
   router.post('/api/auth/login', async (req, res, params, body) => {
     const email = (body.email || '').trim().toLowerCase();
     const { data, error } = await anon().auth.signInWithPassword({ email, password: body.password || '' });
-    if (error || !data.session) return sendJSON(res, 401, { error: 'Invalid email or password' });
+    if (error || !data.session) {
+      // The client only ever sees the generic message below (don't leak
+      // whether an email exists) — the real Supabase reason (bad password,
+      // "Email not confirmed", user not found, rate-limited, etc.) goes to
+      // the function logs only, so a failed login is actually debuggable
+      // from Netlify → Functions → api → logs instead of a guessing game.
+      console.error('login failed for', email, '-', error && error.message);
+      return sendJSON(res, 401, { error: 'Invalid email or password' });
+    }
     const { data: profile } = await admin().from('planner_profiles').select('*').eq('id', data.user.id).maybeSingle();
     if (!profile) return sendJSON(res, 401, { error: 'No planner profile for this account' });
     sendJSON(res, 200, {
