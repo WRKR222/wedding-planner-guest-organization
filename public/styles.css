@@ -1,0 +1,360 @@
+/* ============================================================
+   CALLSHEET — planner console, v3.
+   Structural direction cross-referenced against real management/ERP UI
+   (Karrot Business admin dashboard, Microsoft Clarity, Korbit's exchange
+   transaction tables — via uibowl, since Mobbin needs a paid plan on this
+   account): soft 1px borders instead of heavy contrast, compact data
+   tables with soft-tinted pill status chips, smoothly-rounded buttons/
+   cards, a thin structured sidebar. Kept deliberately NOT generic-blue-
+   SaaS: the brass accent and the Alex Brush / Plus Jakarta Sans pairing
+   from the branding pass carry the identity so this doesn't collapse into
+   the same look as every other admin panel.
+
+   Ships in dark by default (a planner's day-of tool, often used at night
+   or in a dim venue) with a light mode available from the sidebar toggle
+   — same soft-border/pill-chip/rounded-button structure either way, just
+   re-themed via CSS custom properties on <html data-theme="...">.
+   ============================================================ */
+@import url('https://fonts.googleapis.com/css2?family=Alex+Brush&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
+
+:root, :root[data-theme="dark"] {
+  /* surfaces — warm charcoal, not flat black */
+  --bg: #1c1913;
+  --surface: #242019;
+  --surface-alt: #2a251d;
+  --surface-sunken: #171410;
+  --border: #3a3225;
+  --border-strong: #4c4230;
+
+  /* ink */
+  --ink: #f1ead9;
+  --ink-dim: #c7bca3;
+  --muted: #8f8570;
+
+  /* accent — the one saturated color doing UI work */
+  --brass: #cd9d4f;
+  --brass-hover: #dbb066;
+  --brass-soft: #3b2f1a;
+  --brass-soft-ink: #e2b768;
+
+  /* state colors — soft-tinted chip pairs (bg + ink), not solid fills */
+  --confirm: #7ec090; --confirm-soft: #1e3324;
+  --cue: #e3897d;     --cue-soft: #3c211d;
+  --info: #8bb3e0;    --info-soft: #1e2c3c;
+
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.25);
+  --shadow: 0 4px 16px rgba(0,0,0,0.35);
+  --shadow-lg: 0 16px 44px rgba(0,0,0,0.5);
+}
+
+:root[data-theme="light"] {
+  /* surfaces — light, soft-warm neutrals instead of stark gray */
+  --bg: #f7f5f1;
+  --surface: #ffffff;
+  --surface-alt: #fbf9f5;
+  --surface-sunken: #f1eee7;
+  --border: #e7e1d5;
+  --border-strong: #d8d0bd;
+
+  /* ink */
+  --ink: #24201a;
+  --ink-dim: #57503f;
+  --muted: #8c8371;
+
+  /* accent */
+  --brass: #b8823c;
+  --brass-hover: #a3722f;
+  --brass-soft: #fbead0;
+  --brass-soft-ink: #8a5f20;
+
+  /* state colors */
+  --confirm: #2f7a4f; --confirm-soft: #e4f4e9;
+  --cue: #c1443c;     --cue-soft: #fbeae8;
+  --info: #3a6ea5;    --info-soft: #e8f0f8;
+
+  --shadow-sm: 0 1px 2px rgba(36,32,26,0.04);
+  --shadow: 0 4px 16px rgba(36,32,26,0.06);
+  --shadow-lg: 0 16px 40px rgba(36,32,26,0.12);
+}
+
+:root {
+  --radius-sm: 8px;
+  --radius: 12px;
+  --radius-lg: 16px;
+
+  --font-title: 'Alex Brush', cursive;
+  --font-body: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+a { color: var(--brass-hover); text-decoration: none; }
+a:hover { text-decoration: underline; }
+h1, h2 { font-family: var(--font-title); font-weight: 400; margin: 0 0 6px; letter-spacing: 0; line-height: 1.15; color: var(--ink); }
+h1 { font-size: 2.7rem; } h2 { font-size: 1.9rem; }
+h3, h4 { font-family: var(--font-body); font-weight: 600; margin: 0 0 4px; letter-spacing: -0.005em; color: var(--ink); }
+h3 { font-size: 1rem; } h4 { font-size: 0.9rem; }
+p { margin: 0 0 10px; color: var(--ink-dim); font-weight: 400; }
+code, .mono { font-family: var(--font-body); font-weight: 500; }
+:focus-visible { outline: 2px solid var(--brass); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+
+/* ---------- Landing ---------- */
+.landing { display: grid; place-items: center; padding: 24px; min-height: 100vh; }
+.landing-card { max-width: 560px; text-align: center; }
+.eyebrow { font-family: var(--font-body); font-weight: 600; text-transform: uppercase; letter-spacing: 0.14em; font-size: 0.7rem; color: var(--brass-hover); margin-bottom: 12px; }
+.landing-copy { color: var(--ink-dim); }
+.landing-actions { margin: 20px 0 14px; }
+.landing-note { font-size: 0.85rem; color: var(--muted); }
+
+/* ---------- Buttons & form controls — smooth, consistently rounded ---------- */
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 10px 18px; border-radius: var(--radius-sm); border: 1px solid var(--border-strong);
+  background: var(--surface); color: var(--ink); font: inherit; font-weight: 600; font-size: 0.85rem;
+  cursor: pointer; transition: transform .08s ease, background .15s ease, border-color .15s ease, box-shadow .15s ease;
+  box-shadow: var(--shadow-sm);
+}
+.btn:hover { border-color: var(--brass); box-shadow: var(--shadow); }
+.btn:active { transform: translateY(1px); }
+.btn-primary { background: var(--brass); color: #fff; border-color: var(--brass); }
+.btn-primary:hover { background: var(--brass-hover); border-color: var(--brass-hover); }
+.btn-danger { background: var(--surface); color: var(--cue); border-color: var(--border-strong); }
+.btn-danger:hover { background: var(--cue-soft); border-color: var(--cue); }
+.btn-ghost { background: transparent; border-color: transparent; color: var(--muted); box-shadow: none; }
+.btn-ghost:hover { color: var(--ink); background: var(--surface-sunken); box-shadow: none; }
+.btn-sm { padding: 6px 12px; font-size: 0.78rem; border-radius: 7px; }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; box-shadow: none; }
+
+input, select, textarea {
+  font: inherit; color: var(--ink); background: var(--surface);
+  border: 1px solid var(--border-strong); border-radius: var(--radius-sm); padding: 9px 12px; width: 100%;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+input:focus, select:focus, textarea:focus { border-color: var(--brass); box-shadow: 0 0 0 3px var(--brass-soft); outline: none; }
+label { display: block; font-family: var(--font-body); font-weight: 600; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin-bottom: 6px; }
+.field { margin-bottom: 14px; }
+.field-row { display: flex; gap: 12px; flex-wrap: wrap; }
+.field-row > .field { flex: 1; min-width: 160px; }
+.hint { font-size: 0.78rem; color: var(--muted); margin-top: 4px; }
+
+/* toggle switch — soft pill track, smooth thumb travel */
+.toggle { position: relative; display: inline-flex; align-items: center; gap: 12px; cursor: pointer; user-select: none; }
+.toggle input { position: absolute; opacity: 0; width: 0; height: 0; }
+.toggle .track { width: 40px; height: 22px; border-radius: 999px; background: var(--surface-sunken); border: 1px solid var(--border-strong); position: relative; transition: background .15s, border-color .15s; flex-shrink: 0; }
+.toggle .track::after { content: ''; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.25); transition: transform .15s; }
+.toggle input:checked + .track { background: var(--brass); border-color: var(--brass); }
+.toggle input:checked + .track::after { transform: translateX(18px); }
+.toggle .toggle-label { font-size: 0.9rem; font-weight: 600; }
+.toggle .toggle-sub { font-size: 0.78rem; color: var(--muted); }
+
+/* ---------- App shell ---------- */
+.app-shell { display: grid; grid-template-columns: 226px minmax(0, 1fr); min-height: 100vh; }
+.sidebar {
+  background: var(--surface); border-right: 1px solid var(--border);
+  padding: 20px 12px; display: flex; flex-direction: column; gap: 3px;
+}
+.brand { font-family: var(--font-title); font-size: 2.1rem; font-weight: 400; letter-spacing: 0; padding: 0 10px 18px; border-bottom: 1px solid var(--border); margin-bottom: 14px; line-height: 1; }
+.brand small { display: block; font-family: var(--font-body); font-weight: 500; font-size: 0.68rem; letter-spacing: 0.03em; color: var(--muted); text-transform: none; margin-top: 6px; }
+.nav-tab {
+  display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: var(--radius-sm);
+  color: var(--ink-dim); cursor: pointer; font-size: 0.87rem; font-weight: 500; border: 1px solid transparent;
+}
+.nav-tab:hover { background: var(--surface-sunken); text-decoration: none; }
+.nav-tab.active { background: var(--brass-soft); color: var(--brass-soft-ink); font-weight: 600; }
+.nav-tab .nav-icon { width: 17px; height: 17px; flex-shrink: 0; color: currentColor; opacity: 0.85; }
+.sidebar-footer { margin-top: auto; padding-top: 14px; border-top: 1px solid var(--border); font-size: 0.78rem; color: var(--muted); }
+
+.main { padding: 28px 34px 60px; max-width: 1220px; min-width: 0; }
+.topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 22px; gap: 16px; flex-wrap: wrap; }
+.topbar h1 { margin: 0; }
+.breadcrumb { font-family: var(--font-body); font-weight: 600; font-size: 0.7rem; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 8px; }
+
+/* cue light — the one pulsing indicator, reserved for "this wedding is
+   coming up soon"; not used decoratively anywhere else. */
+.cue-light { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-body); font-weight: 600; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--cue); }
+.cue-light .bulb { width: 7px; height: 7px; border-radius: 50%; background: var(--cue); box-shadow: 0 0 6px rgba(193,68,60,0.5); animation: cue-pulse 1.6s ease-in-out infinite; }
+@keyframes cue-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+
+/* ---------- Cards — soft border + shadow, not heavy outlines ---------- */
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 22px; margin-bottom: 18px; box-shadow: var(--shadow-sm); min-width: 0; }
+.card-flush { padding: 0; overflow: hidden; }
+.card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; gap: 10px; flex-wrap: wrap; }
+
+/* stat tiles — deliberately not identical: each carries its own accent
+   underline tied to what it means, so the row reads at a glance instead
+   of as five repeated gray boxes. */
+.stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+.stat { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; border-top: 3px solid var(--border-strong); }
+.stat.stat-total { border-top-color: var(--ink-dim); }
+.stat.stat-confirmed { border-top-color: var(--confirm); }
+.stat.stat-unconfirmed { border-top-color: var(--brass); }
+.stat.stat-declined { border-top-color: var(--cue); }
+.stat.stat-seated, .stat.stat-checkedin { border-top-color: var(--info); }
+.stat .num { font-family: var(--font-body); font-weight: 700; font-size: 1.8rem; display: block; color: var(--ink); }
+.stat .lbl { font-size: 0.7rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; font-family: var(--font-body); font-weight: 600; }
+
+/* ---------- Data table — compact, soft header, hover tint, right-aligned
+   numerics where relevant (spacing/typography match, not literal reuse) ---------- */
+.table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+table { width: 100%; border-collapse: collapse; font-size: 0.86rem; min-width: 560px; }
+thead th { text-align: left; font-family: var(--font-body); font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); padding: 12px 16px; border-bottom: 1px solid var(--border); font-weight: 600; background: var(--surface-alt); white-space: nowrap; }
+tbody td { padding: 12px 16px; border-bottom: 1px solid var(--surface-sunken); vertical-align: middle; }
+tbody tr:hover { background: var(--surface-alt); }
+tbody tr:last-child td { border-bottom: none; }
+
+/* ---------- Status chips — soft-tinted pill + leading dot. Cross-referenced
+   from ERP/exchange table patterns (soft bg + colored text reads faster in
+   a dense table than an outlined badge), kept from being purely generic via
+   the leading dot + consistent state-color mapping used everywhere. ---------- */
+.tick { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-body); font-weight: 600; font-size: 0.74rem; padding: 4px 10px 4px 8px; border-radius: 999px; white-space: nowrap; }
+.tick::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+.tick-confirmed { color: var(--confirm); background: var(--confirm-soft); }
+.tick-unconfirmed { color: var(--brass-soft-ink); background: var(--brass-soft); }
+.tick-declined { color: var(--cue); background: var(--cue-soft); }
+.tick-no_response { color: var(--muted); background: var(--surface-sunken); }
+.tick-invited { color: var(--info); background: var(--info-soft); }
+
+.badge { display: inline-block; font-family: var(--font-body); font-weight: 600; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.03em; padding: 4px 10px; border-radius: 999px; background: var(--surface-sunken); color: var(--muted); border: 1px solid var(--border); }
+.badge-on { color: var(--brass-soft-ink); border-color: var(--brass-soft); background: var(--brass-soft); }
+
+.empty-state { text-align: center; padding: 50px 20px; color: var(--muted); }
+.empty-state h3 { color: var(--ink-dim); margin-bottom: 6px; }
+
+/* ---------- Modal ---------- */
+.modal-backdrop { position: fixed; inset: 0; background: rgba(36,32,26,0.4); display: flex; align-items: center; justify-content: center; z-index: 50; padding: 20px; backdrop-filter: blur(2px); }
+.modal { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 26px; width: 100%; max-width: 520px; max-height: 88vh; overflow: auto; box-shadow: var(--shadow-lg); }
+.modal-close { float: right; }
+
+/* ---------- Toast / offline banner ---------- */
+.toast-stack { position: fixed; bottom: 18px; right: 18px; display: flex; flex-direction: column; gap: 8px; z-index: 100; max-width: calc(100vw - 36px); }
+.toast { background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--brass); border-radius: var(--radius-sm); padding: 11px 15px; font-size: 0.85rem; box-shadow: var(--shadow-lg); max-width: 320px; }
+.toast.err { border-left-color: var(--cue); color: var(--cue); }
+.toast.ok { border-left-color: var(--confirm); color: var(--confirm); }
+
+.offline-banner {
+  display: none; align-items: center; gap: 8px; background: var(--brass-soft); color: var(--brass-soft-ink);
+  border: 1px solid var(--brass-soft-ink); border-radius: var(--radius-sm); padding: 9px 14px; font-size: 0.8rem; margin-bottom: 16px;
+  font-family: var(--font-body); font-weight: 600;
+}
+.offline-banner.show { display: flex; }
+.offline-banner .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--brass-soft-ink); animation: cue-pulse 1.4s infinite; }
+.sync-pill { font-family: var(--font-body); font-weight: 500; font-size: 0.7rem; color: var(--muted); }
+
+/* ---------- Tabs (within a wedding) ---------- */
+.subtabs { display: flex; gap: 2px; border-bottom: 1px solid var(--border); margin-bottom: 20px; flex-wrap: wrap; overflow-x: auto; }
+.subtab { padding: 10px 15px; font-family: var(--font-body); font-size: 0.82rem; text-transform: none; letter-spacing: 0; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; font-weight: 600; white-space: nowrap; }
+.subtab.active { color: var(--brass-hover); border-color: var(--brass); }
+.subtab.locked { opacity: 0.4; cursor: not-allowed; }
+
+/* ---------- Seating grid ---------- */
+.seating-layout { display: grid; grid-template-columns: 1fr 270px; gap: 18px; align-items: start; }
+.tables-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 14px; }
+.seat-table { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; box-shadow: var(--shadow-sm); }
+.seat-table h4 { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.seat-slot {
+  border: 1px dashed var(--border-strong); border-radius: var(--radius-sm); padding: 7px 10px; font-size: 0.8rem;
+  margin-bottom: 6px; min-height: 32px; display: flex; align-items: center; justify-content: space-between;
+  background: var(--surface-alt); cursor: pointer;
+}
+.seat-slot.filled { border-style: solid; border-color: var(--brass-soft); background: var(--surface); }
+.seat-slot .empty-lbl { color: var(--muted); font-style: italic; }
+.unseated-pool { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; max-height: 560px; overflow: auto; box-shadow: var(--shadow-sm); }
+.pool-guest {
+  display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 8px 10px;
+  border-radius: var(--radius-sm); margin-bottom: 6px; background: var(--surface-alt); border: 1px solid var(--border);
+  cursor: grab; font-size: 0.83rem; transition: box-shadow .12s;
+}
+.pool-guest:hover { box-shadow: var(--shadow-sm); }
+.pool-guest[draggable="true"]:active { cursor: grabbing; }
+
+/* ---------- Floor plan — a spatial view of the actual room. Tables and
+   landmarks sit at percentage positions on a canvas so it holds up at any
+   screen size; an optional uploaded photo/scan of the real venue traces
+   underneath. Built from a hand-sketched reference: numbered round/rect
+   tables positioned around a labeled dance floor, head table, and entrance. */
+.floorplan-shell { max-width: 100%; }
+.floorplan-canvas {
+  position: relative; width: 100%; border: 1px solid var(--border); border-radius: var(--radius-lg);
+  background-color: var(--surface-alt);
+  background-image:
+    radial-gradient(circle, var(--border) 1px, transparent 1px),
+    linear-gradient(var(--border) 0 0);
+  background-size: 24px 24px, cover;
+  background-position: center;
+  background-repeat: repeat, no-repeat;
+  overflow: hidden; box-shadow: var(--shadow-sm);
+}
+.fp-empty-hint { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; text-align: center; padding: 30px; color: var(--muted); font-size: 0.85rem; max-width: 320px; margin: auto; }
+
+.fp-table {
+  position: absolute; transform: translate(-50%, -50%); border: 2px solid var(--border-strong); background: var(--surface);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: grab; user-select: none;
+  box-shadow: var(--shadow-sm); min-width: 56px; min-height: 44px; touch-action: none; padding: 4px;
+}
+.fp-table.round { border-radius: 50%; }
+.fp-table.rectangle { border-radius: var(--radius-sm); }
+.fp-table.reserved { border-color: var(--brass); box-shadow: 0 0 0 3px var(--brass-soft); }
+.fp-table.full { border-color: var(--confirm); }
+.fp-table:active { cursor: grabbing; }
+.fp-table .fp-table-num { font-family: var(--font-body); font-weight: 700; font-size: 0.92rem; line-height: 1.1; }
+.fp-table .fp-table-occ { font-size: 0.63rem; color: var(--muted); font-weight: 600; }
+.fp-table .fp-table-reserved { font-size: 0.58rem; color: var(--brass-soft-ink); font-weight: 700; text-transform: uppercase; letter-spacing: 0.02em; margin-top: 1px; }
+
+.fp-landmark {
+  position: absolute; transform: translate(-50%, -50%); background: rgba(255,255,255,0.88); border: 1.5px dashed var(--border-strong);
+  border-radius: var(--radius-sm); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  font-size: 0.68rem; font-weight: 700; color: var(--ink-dim); text-transform: uppercase; letter-spacing: 0.03em;
+  padding: 4px; text-align: center; cursor: grab; user-select: none; min-width: 64px; min-height: 40px; touch-action: none;
+}
+.fp-landmark:active { cursor: grabbing; }
+
+[data-theme="dark"] .fp-landmark { background: rgba(36,32,25,0.88); }
+
+/* ---------- Check-in ---------- */
+.checkin-row { display: flex; justify-content: space-between; align-items: center; padding: 13px 4px; border-bottom: 1px solid var(--surface-sunken); }
+.checkin-search { font-size: 1rem; padding: 13px 16px; margin-bottom: 14px; border-radius: var(--radius); }
+.arrived-tick { width: 30px; height: 30px; border: 1.5px solid var(--border-strong); display: grid; place-items: center; cursor: pointer; flex-shrink: 0; background: var(--surface); border-radius: 999px; font-family: var(--font-body); font-weight: 700; transition: all .12s; }
+.arrived-tick.done { background: var(--confirm); border-color: var(--confirm); color: #fff; }
+
+/* ---------- Import preview ---------- */
+.import-drop { border: 1.5px dashed var(--border-strong); border-radius: var(--radius); padding: 30px; text-align: center; cursor: pointer; background: var(--surface-alt); transition: border-color .15s, background .15s; }
+.import-drop:hover { border-color: var(--brass); background: var(--brass-soft); }
+.confidence-low { color: var(--cue); }
+.confidence-low td { background: var(--cue-soft); }
+
+/* ---------- Responsive: desktop-first system tuned down for mobile ---------- */
+@media (max-width: 980px) {
+  .seating-layout { grid-template-columns: 1fr; }
+}
+@media (max-width: 880px) {
+  .app-shell { grid-template-columns: 1fr; }
+  .sidebar { position: sticky; top: 0; z-index: 10; flex-direction: row; overflow-x: auto; padding: 10px 12px; align-items: center; gap: 4px; }
+  .brand { display: none; }
+  .sidebar-footer { display: none; }
+  .nav-tab { white-space: nowrap; }
+  .main { padding: 18px 16px 48px; }
+  .card { padding: 16px; }
+  .modal { padding: 20px; }
+  h1 { font-size: 2.1rem; }
+  h2 { font-size: 1.5rem; }
+  .fp-table { min-width: 46px; min-height: 38px; }
+  .fp-table .fp-table-num { font-size: 0.8rem; }
+  .fp-table .fp-table-occ, .fp-table .fp-table-reserved { font-size: 0.55rem; }
+  .fp-landmark { min-width: 50px; min-height: 34px; font-size: 0.6rem; }
+}
+@media (max-width: 480px) {
+  .field-row { flex-direction: column; gap: 0; }
+  .toast-stack { right: 10px; bottom: 10px; left: 10px; }
+  .toast { max-width: none; }
+}

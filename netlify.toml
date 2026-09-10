@@ -1,0 +1,42 @@
+[build]
+  publish = "public"
+  functions = "netlify/functions"
+  # Writes public/config.js from the SUPABASE_URL / SUPABASE_ANON_KEY
+  # environment variables set in the Netlify dashboard — see
+  # README-DEPLOY.md step 4. Those two values are safe to ship to the
+  # browser by design (the anon key can't read any table — see schema.sql);
+  # SUPABASE_SERVICE_ROLE_KEY is never referenced here and never reaches
+  # the client bundle.
+  command = "node scripts/generate-config.js"
+
+[functions]
+  node_bundler = "esbuild"
+
+# Every /api/* request goes to the single catch-all function in
+# netlify/functions/api.js (see that file for how it recovers the
+# sub-path). Keeping one function instead of one-per-route keeps cold
+# starts predictable and the Supabase client warm across requests.
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/api/:splat"
+  status = 200
+
+# /couple/:slug is a client-side deep link into couple.html, not a real
+# folder on disk.
+[[redirects]]
+  from = "/couple/*"
+  to = "/couple.html"
+  status = 200
+
+# Give Meta a clean, stable webhook URL to register instead of the raw
+# .netlify/functions path — see netlify/functions/whatsapp-webhook.js.
+[[redirects]]
+  from = "/webhooks/whatsapp"
+  to = "/.netlify/functions/whatsapp-webhook"
+  status = 200
+
+# Runs the reminder sweep automatically. Adjust the cron expression to
+# taste — hourly is a reasonable default for a system whose reminder
+# interval is measured in days.
+[functions."cron-reminders"]
+  schedule = "@hourly"

@@ -1,0 +1,160 @@
+/* ============================================================
+   Wedding stationery suite, v3. Concept unchanged from the branding pass
+   (letterpress invitation card stock — ivory cardstock, botanical ink,
+   brass foil accent, wax-seal for confirmed guests) — this pass brings the
+   same structural discipline as the planner console's ERP-cross-referenced
+   rebuild: a consistent smooth-rounded radius scale instead of the
+   near-sharp 3-4px corners it had before, layered soft shadows instead of
+   flat borders, and per-status colored chips instead of one uniform
+   "muted" pill for every non-confirmed guest. Still deliberately NOT an
+   ERP look — this is the guest-facing surface, it should read as an
+   invitation, not a console — only the underlying spacing/radius/shadow
+   discipline is shared.
+   Structural rules only — --c-primary, --c-accent, --c-bg, --c-heading-font,
+   --c-body-font are set inline by couple.js from weddings.theme, so a new
+   wedding never needs a code change (NFR9).
+   ============================================================ */
+:root {
+  --c-primary: #3c4f3e;
+  --c-accent: #b8935a;
+  --c-bg: #f5f1e6;
+  --c-ink: #2c2a22;
+  --c-muted: #8a8171;
+  --c-heading-font: 'Alex Brush', cursive;
+  --c-body-font: 'Plus Jakarta Sans', sans-serif;
+
+  --c-border: #eee5d2;
+  --c-border-soft: #f0ece0;
+  --c-radius-sm: 10px;
+  --c-radius: 14px;
+  --c-radius-lg: 20px;
+  --c-shadow-sm: 0 1px 3px rgba(44,42,34,0.06);
+  --c-shadow: 0 8px 24px rgba(44,42,34,0.08);
+  --c-shadow-lg: 0 22px 50px rgba(44,42,34,0.12);
+
+  /* per-status chip pairs — same "soft tint + colored text" idea used on
+     the planner console, tuned to sit comfortably against ivory cardstock */
+  --c-confirm: #3c6b4a; --c-confirm-soft: #e7f1e7;
+  --c-warn: #9a6b2a;    --c-warn-soft: #f5ecd8;
+  --c-cue: #a8433a;     --c-cue-soft: #f6e6e3;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body.couple-body {
+  background: var(--c-bg); color: var(--c-ink); font-family: var(--c-body-font);
+  font-weight: 300; font-size: 15.5px; line-height: 1.65; -webkit-font-smoothing: antialiased;
+  background-image: radial-gradient(circle at 100% 0%, rgba(0,0,0,0.025), transparent 55%);
+}
+.c-h1, .c-h2 { font-family: var(--c-heading-font); font-weight: 400; margin: 0 0 8px; color: var(--c-ink); line-height: 1.15; }
+.c-h1 { font-size: 3rem; } .c-h2 { font-size: 2rem; }
+.c-h3 { font-family: var(--c-body-font); font-weight: 600; margin: 0 0 6px; color: var(--c-ink); font-size: 1.02rem; }
+.c-shell { max-width: 640px; margin: 0 auto; padding: 44px 20px 96px; }
+.c-header { text-align: center; margin-bottom: 32px; }
+.c-header .c-kicker { text-transform: uppercase; letter-spacing: 0.18em; font-size: 0.68rem; color: var(--c-accent); margin-bottom: 8px; font-weight: 600; }
+.c-header .c-divider { width: 40px; height: 1px; background: var(--c-accent); margin: 16px auto 0; position: relative; }
+.c-header .c-divider::before { content: '\2022'; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); color: var(--c-accent); background: var(--c-bg); padding: 0 6px; font-size: 0.9rem; }
+
+.c-gate { min-height: 100vh; display: grid; place-items: center; padding: 20px; }
+.c-gate-card { background: #fff; border: 1px solid var(--c-border); border-radius: var(--c-radius-lg); padding: 40px 32px; max-width: 400px; width: 100%; text-align: center; box-shadow: var(--c-shadow-lg); position: relative; }
+.c-gate-card::before { content: ''; position: absolute; inset: 12px; border: 1px solid var(--c-accent); border-radius: calc(var(--c-radius-lg) - 8px); pointer-events: none; opacity: 0.3; }
+.c-gate-card p { color: var(--c-muted); }
+
+.c-card { background: #fff; border: 1px solid var(--c-border); border-radius: var(--c-radius); padding: 22px; margin-bottom: 16px; box-shadow: var(--c-shadow-sm); }
+.c-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; gap: 10px; }
+
+.c-input {
+  width: 100%; padding: 13px 15px; border-radius: var(--c-radius-sm); border: 1.5px solid var(--c-border);
+  font: inherit; font-size: 1rem; background: #fff; color: var(--c-ink); transition: border-color .15s, box-shadow .15s;
+}
+.c-input:focus { outline: none; border-color: var(--c-primary); box-shadow: 0 0 0 3px rgba(60,79,62,0.1); }
+.c-label { display: block; font-size: 0.72rem; color: var(--c-muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; }
+.c-field { margin-bottom: 16px; }
+
+.c-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px; width: 100%;
+  padding: 13px 20px; border-radius: 999px; border: 1px solid var(--c-primary); background: var(--c-primary); color: #f5f1e6;
+  font: inherit; font-weight: 600; font-size: 0.9rem; letter-spacing: 0.02em; cursor: pointer; transition: opacity .15s, transform .08s, box-shadow .15s;
+  box-shadow: var(--c-shadow-sm);
+}
+.c-btn:hover { opacity: 0.92; box-shadow: var(--c-shadow); }
+.c-btn:active { transform: translateY(1px); }
+.c-btn.secondary { background: transparent; color: var(--c-primary); box-shadow: none; }
+.c-btn-sm { width: auto; padding: 9px 16px; font-size: 0.8rem; }
+.c-btn:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; }
+
+.c-tabs { display: flex; gap: 0; margin-bottom: 18px; background: #fff; border: 1px solid var(--c-border); border-radius: 999px; padding: 4px; box-shadow: var(--c-shadow-sm); }
+.c-tab { flex: 1; text-align: center; padding: 10px 12px; border-radius: 999px; font-size: 0.82rem; font-weight: 600; color: var(--c-muted); cursor: pointer; letter-spacing: 0.01em; transition: background .15s, color .15s; }
+.c-tab.active { background: var(--c-primary); color: #f5f1e6; }
+
+.c-guest-row { display: flex; justify-content: space-between; align-items: center; padding: 13px 0; border-bottom: 1px solid var(--c-border-soft); gap: 10px; }
+.c-guest-row:last-child { border-bottom: none; }
+.c-guest-name-wrap { display: flex; align-items: center; gap: 11px; }
+.c-guest-name { font-weight: 600; }
+.c-guest-meta { font-size: 0.78rem; color: var(--c-muted); }
+
+/* the one signature element: a pressed wax seal for confirmed guests —
+   built from layered gradients (no color-mix() dependency) so it renders
+   correctly whatever primary color a couple picks. */
+.c-seal { width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0; background: var(--c-primary);
+  background-image: radial-gradient(circle at 33% 28%, rgba(255,255,255,0.55), rgba(255,255,255,0) 46%),
+                     radial-gradient(circle at 68% 74%, rgba(0,0,0,0.28), rgba(0,0,0,0) 55%);
+  box-shadow: 0 1px 3px rgba(44,42,34,0.35), inset 0 0 0 1px rgba(255,255,255,0.15);
+  display: flex; align-items: center; justify-content: center; color: #f5f1e6; font-size: 0.72rem; }
+.c-seal-empty { width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0; border: 1.5px dashed #d9cdb0; }
+
+/* status chips — soft-tinted per state (mirrors the planner's chip
+   language) instead of one uniform gray pill for every non-confirmed
+   guest, so a declined RSVP reads differently from one still pending. */
+.c-pill { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.04em; padding: 4px 10px; border-radius: 999px; white-space: nowrap; font-weight: 700; }
+.c-pill.confirmed { color: var(--c-confirm); background: var(--c-confirm-soft); }
+.c-pill.unconfirmed { color: var(--c-warn); background: var(--c-warn-soft); }
+.c-pill.declined { color: var(--c-cue); background: var(--c-cue-soft); }
+.c-pill.muted { color: var(--c-muted); background: var(--c-border-soft); }
+
+.c-empty { text-align: center; padding: 32px 10px; color: var(--c-muted); }
+.c-offline { display: none; align-items: center; gap: 8px; background: var(--c-warn-soft); color: var(--c-warn); border: 1px solid #ecdba9; border-radius: var(--c-radius-sm); padding: 10px 14px; font-size: 0.8rem; margin-bottom: 16px; font-weight: 600; }
+.c-offline.show { display: flex; }
+.c-offline .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--c-accent); animation: cpulse 1.4s infinite; }
+@keyframes cpulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+.c-fab-add { position: fixed; bottom: 24px; right: 50%; transform: translateX(50%); max-width: 600px; width: calc(100% - 40px); }
+
+.c-seat-table { border: 1px solid var(--c-border); border-radius: var(--c-radius); padding: 16px; margin-bottom: 12px; box-shadow: var(--c-shadow-sm); }
+
+/* Read-only floor plan preview — same spatial concept as the planner's
+   editor, just not draggable here. */
+.c-floorplan-canvas {
+  position: relative; width: 100%; background-color: #faf7ef;
+  background-image: radial-gradient(circle, var(--c-border) 1px, transparent 1px);
+  background-size: 20px 20px; background-position: center;
+}
+.c-fp-table {
+  position: absolute; transform: translate(-50%, -50%); border: 1.5px solid var(--c-primary); background: #fff;
+  display: flex; align-items: center; justify-content: center; font-size: 0.72rem; font-weight: 700; color: var(--c-ink);
+  min-width: 34px; min-height: 28px;
+}
+.c-fp-table.round { border-radius: 50%; }
+.c-fp-table.rectangle { border-radius: 6px; }
+.c-fp-landmark {
+  position: absolute; transform: translate(-50%, -50%); background: rgba(255,255,255,0.85); border: 1px dashed var(--c-accent);
+  border-radius: 6px; display: flex; align-items: center; justify-content: center; text-align: center;
+  font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; color: var(--c-muted);
+  min-width: 40px; min-height: 24px; padding: 3px;
+}
+.c-seat-slot { display: flex; justify-content: space-between; align-items: center; padding: 8px 2px; font-size: 0.85rem; border-bottom: 1px dotted var(--c-border-soft); }
+.c-seat-slot:last-child { border-bottom: none; }
+
+/* ---------- Responsive: comfortable on a phone, still centered and
+   readable rather than stretched thin on desktop ---------- */
+@media (min-width: 720px) {
+  .c-shell { max-width: 680px; padding-top: 56px; }
+  .c-h1 { font-size: 3.4rem; }
+}
+@media (max-width: 480px) {
+  .c-shell { padding: 26px 14px 96px; }
+  .c-h1 { font-size: 2.3rem; }
+  .c-h2 { font-size: 1.6rem; }
+  .c-gate-card { padding: 32px 22px; }
+  .c-gate-card .c-h1 { font-size: 2.1rem; }
+  .c-card { padding: 17px; }
+}

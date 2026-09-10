@@ -1,0 +1,19 @@
+{
+  "name": "wedding-rsvp-seating-system-netlify",
+  "version": "3.0.0",
+  "private": true,
+  "description": "Wedding Guest, RSVP & Seating Management System — Netlify Functions + Supabase backend, deployable as-is.",
+  "scripts": {
+    "build": "node scripts/generate-config.js",
+    "dev": "netlify dev",
+    "seed": "node scripts/seed-demo.js"
+  },
+  "engines": { "node": ">=18" },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.0"
+  },
+  "devDependencies": {
+    "netlify-cli": "^17.0.0",
+    "dotenv": "^16.4.5"
+  }
+}
