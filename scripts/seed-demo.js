@@ -13,6 +13,8 @@
 // RLS to write the seed data.)
 require('dotenv').config();
 const { createClient } = require('@supabase/supabase-js');
+// See lib/supabase.js for why this is required on Node < 22.
+const ws = require('ws');
 
 const url = process.env.SUPABASE_URL;
 const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -20,7 +22,10 @@ if (!url || !key) {
   console.error('Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY (see the comment at the top of this file) and re-run.');
   process.exit(1);
 }
-const db = createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } });
+const db = createClient(url, key, {
+  auth: { autoRefreshToken: false, persistSession: false },
+  realtime: { transport: ws },
+});
 
 const DEMO_EMAIL = 'planner@demo.test';
 const DEMO_PASSWORD = 'demo1234';

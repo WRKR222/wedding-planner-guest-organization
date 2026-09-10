@@ -8,12 +8,15 @@
     "dev": "netlify dev",
     "seed": "node scripts/seed-demo.js"
   },
-  "engines": { "node": ">=18" },
+  "engines": {
+    "node": ">=18"
+  },
   "dependencies": {
-    "@supabase/supabase-js": "^2.45.0"
+    "@supabase/supabase-js": "^2.45.0",
+    "ws": "^8.18.0"
   },
   "devDependencies": {
-    "netlify-cli": "^17.0.0",
-    "dotenv": "^16.4.5"
+    "dotenv": "^16.4.5",
+    "netlify-cli": "^17.0.0"
   }
 }
