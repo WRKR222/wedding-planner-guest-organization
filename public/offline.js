@@ -1,12 +1,12 @@
 // public/offline.js
 //
-// Implements the client half of architecture §7: every guest-list write
-// applies to a local cache immediately (optimistic), is queued, and is
-// flushed to /guests/sync as a batch the moment the browser is online.
-// Reads come from the local cache first (so the UI never blocks on a
-// network round trip) and are refreshed by polling /guests/changes, which
-// stands in for a live Supabase Realtime subscription (FR4.1/FR23.1 —
-// "feels live", not literally a websocket, in this offline sandbox build).
+// Implements offline-first guest-list sync: every write applies to a local
+// cache immediately (optimistic), is queued, and is flushed to /guests/sync
+// as a batch the moment the browser is online. Reads come from the local
+// cache first (so the UI never blocks on a network round trip) and are
+// refreshed by polling /guests/changes, which stands in for a live
+// Supabase Realtime subscription ("feels live", not literally a websocket,
+// in this offline sandbox build).
 
 function makeGuestStore(weddingId) {
   const cacheKey = `wrsvp:cache:${weddingId}`;

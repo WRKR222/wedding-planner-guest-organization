@@ -17,16 +17,16 @@ connected (see README-DEPLOY.md step 4 onward).
 
 ## What's here
 
-| Module | Where | Key requirements |
+| Module | Where | Notes |
 |---|---|---|
-| Guest List & Status Tracking (always on) | Guest list tab | FR1–FR4, offline-first (NFR11) |
-| Import from document/photo | Import list tab | FR1.1–FR1.6 |
-| Automated Invite & Reminder Sending | Invites & messages tab + scheduled function | FR5–FR10, NFR2, NFR6 — real WhatsApp Cloud API + SMS fallback, auto-falls back to demo mode without credentials |
-| Seating & Table Arrangement | Seating tab — list view or a visual floor plan (upload the venue's own layout, place/reserve round or rectangular tables, label the dance floor/entrance/head table) | FR19–FR23 |
-| Couple Companion Site | `/couple/:slug`, bespoke-themed | FR29a–FR29e, FR30, NFR9 |
-| Event-Day Check-In | Check-in tab | FR31–FR34 |
-| Wedding setup & modules | Settings tab | FR0.1–FR0.6 |
-| Admin cross-wedding view | "Admin overview" nav | FR35–FR37 |
+| Guest List & Status Tracking (always on) | Guest list tab | Offline-first — writes queue locally and sync once back online |
+| Import from document/photo | Import list tab | Nothing is added until the planner reviews and confirms the parsed rows |
+| Automated Invite & Reminder Sending | Invites & messages tab + scheduled function | Real WhatsApp Cloud API + SMS fallback, auto-falls back to demo mode without credentials |
+| Seating & Table Arrangement | Seating tab — list view or a visual floor plan (upload the venue's own layout, place/reserve round or rectangular tables, label the dance floor/entrance/head table) | A guest can be assigned to a table without a specific seat number |
+| Couple Companion Site | `/couple/:slug`, bespoke-themed | Curated color + Google Font picker per wedding, never a code change |
+| Event-Day Check-In | Check-in tab | |
+| Wedding setup & modules | Settings tab | |
+| Admin cross-wedding view | Separate `/admin.html` — not part of a planner's own nav | Support & billing visibility across every planner/wedding, for the system owner only |
 
 ## Architecture at a glance
 
@@ -52,18 +52,17 @@ JSON-array operations to `await supabase.from(...)`.
 
 ## Design notes
 
-The planner console ("Callsheet") and the couple companion site are two
-deliberately different visual languages: the planner side is a typed
-production-office run sheet (kraft/charcoal tones, monospace headers, ledger
-tick-boxes standing in for status pills, a brass accent), and the couple
-site is wedding stationery (ivory cardstock, botanical ink, a brass foil
-accent, a pressed wax-seal mark for confirmed guests) — themeable per
-wedding via a curated color + Google Font picker (NFR9), never a code
-change. Neither reaches for the cream-background-plus-terracotta-accent
-combination that shows up on most AI-generated wedding pages regardless of
-brief, or the dark-dashboard-with-one-bright-accent look most AI-generated
-consoles default to — see the comments at the top of `public/styles.css` and
-`public/couple.css` for the reasoning behind each choice.
+The planner console ("Callsheet") and the couple companion site share one
+fixed visual language — a warm-charcoal surface with a brass accent and an
+Alex Brush / Plus Jakarta Sans font pairing, with no separate dark/light
+mode — so a planner moving between their own dashboard and a couple's
+companion site sees one consistent product. Cursive stays reserved for the
+couple's own name and each app's main titles; body text and guest names
+use the plain sans-serif for readability. On top of that shared chrome,
+each wedding still gets its own bespoke primary/accent color and Google
+Font pairing on the couple site, picked from a curated list — never a code
+change. See the comments at the top of `public/styles.css` and
+`public/couple.css` for the reasoning behind the choices.
 
 ## Repo layout
 
@@ -72,7 +71,7 @@ See the tree in `README-DEPLOY.md`, or just:
 ```
 schema/schema.sql            Run this once in Supabase SQL Editor
 lib/                          Supabase client, auth, access scoping, broadcast
-routes/                       One file per module — same shape as PRD §3
+routes/                       One file per module
 netlify/functions/api.js      Catch-all Netlify Function (routes every /api/*)
 netlify/functions/cron-reminders.js   Scheduled function (see netlify.toml)
 public/                       Planner dashboard + couple companion site

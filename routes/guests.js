@@ -19,7 +19,7 @@ async function applyGuestCreate(db, wedding, body) {
   const { data: guest, error } = await db.from('guests').insert({
     wedding_id: wedding.id,
     full_name: (body.full_name || '').trim(),
-    phone_number: body.phone_number ? String(body.phone_number).trim() : null, // FR1.6: nullable
+    phone_number: body.phone_number ? String(body.phone_number).trim() : null, // nullable
     category: body.category || null,
     is_plus_one: !!body.is_plus_one,
     linked_guest_id: body.linked_guest_id || null,
@@ -108,7 +108,7 @@ function register(router) {
     sendJSON(res, 200, { deleted: true });
   });
 
-  // Manual confirm/unconfirm (FR13/FR29c) — phone-call confirmations and
+  // Manual confirm/unconfirm — phone-call confirmations and
   // every confirmation for manual-only weddings.
   router.post('/api/weddings/:id/guests/:guestId/rsvp', async (req, res, params, body) => {
     const ctx = await resolveWeddingActor(req, res, params.id);

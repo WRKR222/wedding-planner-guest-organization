@@ -5,8 +5,8 @@ const { COUPLE_SESSION_TTL_MS } = require('../lib/auth');
 const { FONT_PAIRINGS } = require('./weddings');
 
 function register(router) {
-  // Public — pre-login branding only. Deliberately returns NO guest data
-  // (NFR3): just enough to paint the passcode screen in the couple's colors.
+  // Public — pre-login branding only. Deliberately returns NO guest data,
+  // just enough to paint the passcode screen in the couple's colors.
   router.get('/api/couple/:slug/theme', async (req, res, params) => {
     const { data: wedding } = await admin().from('weddings').select('*').eq('couple_site_slug', params.slug).maybeSingle();
     if (!wedding || !wedding.couple_site_enabled) return sendJSON(res, 404, { error: 'Not found' });

@@ -199,9 +199,14 @@ tbody tr:last-child td { border-bottom: none; }
 .empty-state h3 { color: var(--ink-dim); margin-bottom: 6px; }
 
 /* ---------- Modal ---------- */
-.modal-backdrop { position: fixed; inset: 0; background: rgba(36,32,26,0.4); display: flex; align-items: center; justify-content: center; z-index: 50; padding: 20px; backdrop-filter: blur(2px); }
-.modal { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 26px; width: 100%; max-width: 520px; max-height: 88vh; overflow: auto; box-shadow: var(--shadow-lg); }
-.modal-close { float: right; }
+.modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.55); display: flex; align-items: center; justify-content: center; z-index: 50; padding: 20px; backdrop-filter: blur(2px); }
+.modal { position: relative; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 26px; width: 100%; max-width: 520px; max-height: 88vh; overflow: auto; box-shadow: var(--shadow-lg); }
+.modal-close {
+  position: absolute; top: 14px; right: 14px; width: 30px; height: 30px; border-radius: 50%;
+  display: grid; place-items: center; border: 1px solid var(--border-strong); background: var(--surface);
+  color: var(--muted); font-size: 1.2rem; line-height: 1; cursor: pointer; transition: color .12s, border-color .12s, background .12s;
+}
+.modal-close:hover { color: var(--ink); border-color: var(--brass); background: var(--surface-sunken); }
 
 /* ---------- Toast / offline banner ---------- */
 .toast-stack { position: fixed; bottom: 18px; right: 18px; display: flex; flex-direction: column; gap: 8px; z-index: 100; max-width: calc(100vw - 36px); }
@@ -228,12 +233,13 @@ tbody tr:last-child td { border-bottom: none; }
 .seating-layout { display: grid; grid-template-columns: 1fr 270px; gap: 18px; align-items: start; }
 .tables-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 14px; }
 .seat-table { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; box-shadow: var(--shadow-sm); }
-.seat-table h4 { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.seat-table h4 { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; gap: 8px; flex-wrap: wrap; }
 .seat-slot {
   border: 1px dashed var(--border-strong); border-radius: var(--radius-sm); padding: 7px 10px; font-size: 0.8rem;
   margin-bottom: 6px; min-height: 32px; display: flex; align-items: center; justify-content: space-between;
-  background: var(--surface-alt); cursor: pointer;
+  background: var(--surface-alt); cursor: pointer; gap: 8px; flex-wrap: wrap;
 }
+.seat-slot > span:first-child { min-width: 0; overflow-wrap: anywhere; }
 .seat-slot.filled { border-style: solid; border-color: var(--brass-soft); background: var(--surface); }
 .seat-slot .empty-lbl { color: var(--muted); font-style: italic; }
 .unseated-pool { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; max-height: 560px; overflow: auto; box-shadow: var(--shadow-sm); }
@@ -242,6 +248,7 @@ tbody tr:last-child td { border-bottom: none; }
   border-radius: var(--radius-sm); margin-bottom: 6px; background: var(--surface-alt); border: 1px solid var(--border);
   cursor: grab; font-size: 0.83rem; transition: box-shadow .12s;
 }
+.pool-guest > span:first-child { min-width: 0; overflow-wrap: anywhere; }
 .pool-guest:hover { box-shadow: var(--shadow-sm); }
 .pool-guest[draggable="true"]:active { cursor: grabbing; }
 
@@ -287,7 +294,8 @@ tbody tr:last-child td { border-bottom: none; }
 .fp-landmark:active { cursor: grabbing; }
 
 /* ---------- Check-in ---------- */
-.checkin-row { display: flex; justify-content: space-between; align-items: center; padding: 13px 4px; border-bottom: 1px solid var(--surface-sunken); }
+.checkin-row { display: flex; justify-content: space-between; align-items: center; padding: 13px 4px; border-bottom: 1px solid var(--surface-sunken); gap: 10px; }
+.checkin-row > div:first-child { min-width: 0; overflow-wrap: anywhere; }
 .checkin-search { font-size: 1rem; padding: 13px 16px; margin-bottom: 14px; border-radius: var(--radius); }
 .arrived-tick { width: 30px; height: 30px; border: 1.5px solid var(--border-strong); display: grid; place-items: center; cursor: pointer; flex-shrink: 0; background: var(--surface); border-radius: 999px; font-family: var(--font-body); font-weight: 700; transition: all .12s; }
 .arrived-tick.done { background: var(--confirm); border-color: var(--confirm); color: #fff; }

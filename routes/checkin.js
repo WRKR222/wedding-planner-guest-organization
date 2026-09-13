@@ -15,7 +15,7 @@ function register(router) {
     sendJSON(res, 200, await attachSeats(db, ctx.wedding.id, guests || []));
   });
 
-  // FR33 — single tap, timestamped, queued exactly like a guest-list
+  // Single tap, timestamped, queued exactly like a guest-list
   // offline op so it works whether or not the door device is online.
   router.post('/api/weddings/:id/guests/:guestId/checkin', async (req, res, params, body) => {
     const ctx = await resolveWeddingActor(req, res, params.id);

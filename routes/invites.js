@@ -38,8 +38,8 @@ function simulateSms(phone) {
 
 async function sendOne(db, wedding, guest, messageType) {
   if (!wedding.automation_enabled) return { skipped: true, reason: 'automation_disabled' };
-  if (wedding.wedding_status !== 'active') return { skipped: true, reason: 'wedding_not_active' }; // FR0.4
-  if (!guest.phone_number) return { skipped: true, reason: 'no_phone_number' }; // FR1.6
+  if (wedding.wedding_status !== 'active') return { skipped: true, reason: 'wedding_not_active' };
+  if (!guest.phone_number) return { skipped: true, reason: 'no_phone_number' };
 
   const vars = {
     guest_name: guest.full_name, couple_names: wedding.couple_names, date: wedding.event_date,
@@ -136,7 +136,7 @@ function register(router) {
     sendJSON(res, 200, await runReminderSweep());
   });
 
-  // NFR2 — messaging cost/volume log per wedding.
+  // Messaging cost/volume log per wedding.
   router.get('/api/weddings/:id/messages', async (req, res, params) => {
     const ctx = await resolveWeddingActor(req, res, params.id);
     if (!ctx) return;

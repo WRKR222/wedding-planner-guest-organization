@@ -92,8 +92,8 @@ function register(router) {
     sendJSON(res, 200, { deleted: true });
   });
 
-  // FR20: any guest, confirmed or not, can be placed. FR21: shape driven by
-  // seat_granularity. FR22: editable up to lock.
+  // Any guest, confirmed or not, can be placed. Shape is driven by
+  // seat_granularity, and it's editable up to lock.
   router.post('/api/weddings/:id/seating/assign', async (req, res, params, body) => {
     const ctx = await resolveWeddingActor(req, res, params.id);
     if (!ctx) return;
@@ -107,8 +107,8 @@ function register(router) {
     if (wedding.seat_granularity !== 'seat_only' && body.table_id) {
       const { data: table } = await db.from('tables').select('id, table_number, reserved_for').eq('id', body.table_id).eq('wedding_id', wedding.id).maybeSingle();
       if (!table) return sendJSON(res, 404, { error: 'Table not found' });
-      // A reserved table is a hint, not a hard rule (FR20 still applies —
-      // any guest can go anywhere) — but the planner should know they're
+      // A reserved table is a hint, not a hard rule — any guest can still
+      // go anywhere — but the planner should know they're
       // about to seat someone outside the group a table was set aside for.
       if (table.reserved_for && guest.category && table.reserved_for.toLowerCase() !== String(guest.category).toLowerCase()) {
         warning = `Table ${table.table_number} is reserved for "${table.reserved_for}" — this guest is tagged "${guest.category}".`;
@@ -136,7 +136,7 @@ function register(router) {
     sendJSON(res, 200, { removed: true });
   });
 
-  // FR23.2 — lock/unlock. No ticket generation happens here (out of scope, per PRD).
+  // Lock/unlock. No ticket generation happens here (out of scope).
   router.post('/api/weddings/:id/seating/lock', async (req, res, params, body) => {
     const ctx = await resolveWeddingActor(req, res, params.id);
     if (!ctx) return;

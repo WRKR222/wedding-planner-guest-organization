@@ -25,6 +25,11 @@
   }
   function escapeHtml(s) { return String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
   function pillClass(status) { return ['confirmed', 'unconfirmed', 'declined'].includes(status) ? status : 'muted'; }
+  // A slim hand-drawn-style checkmark instead of a blunt Unicode glyph —
+  // sits inside the existing wax-seal circle for a confirmed guest.
+  function sealCheck() {
+    return '<svg width="12" height="12" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3.5 8.7l3 3 6-7" stroke="#f5f1e6" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  }
 
   const GOOGLE_FONT_PARAM = {
     alexbrush_plusjakarta: 'Alex+Brush&family=Plus+Jakarta+Sans:wght@300;400;500;600',
@@ -78,7 +83,7 @@
           <p>${new Date(theme.event_date + 'T00:00:00').toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}${theme.venue ? ' · ' + escapeHtml(theme.venue) : ''}</p>
           <form id="gate-form" style="margin-top:18px; text-align:left;">
             <div class="c-field"><label class="c-label">Passcode</label><input class="c-input" name="passcode" autocapitalize="characters" placeholder="AMBER-2026" required /></div>
-            <div id="gate-error" style="color:#b23; font-size:0.82rem; margin-bottom:10px;"></div>
+            <div id="gate-error" style="color:var(--c-cue); font-size:0.82rem; margin-bottom:10px;"></div>
             <button class="c-btn" type="submit">Continue</button>
           </form>
           <p class="c-guest-meta" style="margin-top:14px;">Your planner gave you this passcode — it only unlocks this one wedding.</p>
@@ -119,7 +124,7 @@
           <div class="c-divider"></div>
         </div>
         <div id="c-offline" class="c-offline"><span class="dot"></span><span class="msg"></span></div>
-        ${w.wedding_status !== 'active' ? `<div class="c-card" style="border-color:#eab; background:#fff6f2;"><strong>This wedding is marked ${w.wedding_status}.</strong></div>` : ''}
+        ${w.wedding_status !== 'active' ? `<div class="c-card" style="border-color:var(--c-warn); background:var(--c-warn-soft);"><strong>This wedding is marked ${w.wedding_status}.</strong></div>` : ''}
         <div class="c-tabs">
           <div class="c-tab ${state.tab === 'guests' ? 'active' : ''}" data-ctab="guests">Guest list</div>
           ${showSeating ? `<div class="c-tab ${state.tab === 'seating' ? 'active' : ''}" data-ctab="seating">Seating</div>` : ''}
@@ -157,9 +162,9 @@
         ${guests.length === 0 ? `<div class="c-empty">No guests yet — add the first one below.</div>` : guests.map((g) => `
           <div class="c-guest-row">
             <div class="c-guest-name-wrap">
-              ${g.status === 'confirmed' ? '<span class="c-seal" title="Confirmed">&#10003;</span>' : '<span class="c-seal-empty" title="' + g.status.replace('_', ' ') + '"></span>'}
+              ${g.status === 'confirmed' ? `<span class="c-seal" title="Confirmed">${sealCheck()}</span>` : '<span class="c-seal-empty" title="' + g.status.replace('_', ' ') + '"></span>'}
               <div>
-                <div class="c-guest-name"><span class="c-name-script">${escapeHtml(g.full_name)}</span> ${g.__pending ? '<span class="c-guest-meta">· saving…</span>' : ''}</div>
+                <div class="c-guest-name">${escapeHtml(g.full_name)} ${g.__pending ? '<span class="c-guest-meta">· saving…</span>' : ''}</div>
                 <div class="c-guest-meta">${g.phone_number ? escapeHtml(g.phone_number) : 'No phone on file'}${g.seat ? ` · Table ${g.seat.table_number ?? '—'}` : ''}</div>
               </div>
             </div>
@@ -167,7 +172,7 @@
               <select data-crsvp="${g.id}" class="c-input" style="width:auto; padding:6px 9px; font-size:0.8rem;">
                 ${['invited', 'confirmed', 'unconfirmed', 'declined', 'no_response'].map((s) => `<option value="${s}" ${g.status === s ? 'selected' : ''}>${s.replace('_', ' ')}</option>`).join('')}
               </select>
-              <button class="c-btn c-btn-sm" style="background:transparent; color:#b23; border:1px solid #eab;" data-cdel="${g.id}">Remove</button>
+              <button class="c-btn c-btn-sm" style="background:transparent; color:var(--c-cue); border:1px solid var(--c-border-strong);" data-cdel="${g.id}">Remove</button>
             </div>
           </div>`).join('')}
       </div>`;
@@ -178,7 +183,7 @@
   function openAddGuest(store) {
     const backdrop = document.createElement('div');
     backdrop.className = 'c-gate';
-    backdrop.style.position = 'fixed'; backdrop.style.background = 'rgba(30,20,10,0.35)';
+    backdrop.style.position = 'fixed'; backdrop.style.background = 'rgba(0,0,0,0.55)';
     backdrop.innerHTML = `
       <div class="c-gate-card" style="text-align:left;">
         <h2 class="c-h2">Add a guest</h2>
@@ -226,16 +231,16 @@
           ${venue.tables.filter((t) => t.pos_x != null).map((t) => `<div class="c-fp-table ${t.shape === 'rectangle' ? 'rectangle' : 'round'}" style="left:${t.pos_x}%; top:${t.pos_y}%; width:${t.shape === 'rectangle' ? (t.width || 14) : (t.width || 10)}%; height:${t.shape === 'rectangle' ? (t.height || 8) : (t.width || 10)}%;"><span>${t.table_number}</span></div>`).join('')}
         </div>
       </div>
-      <p class="c-guest-meta" style="text-align:center; margin:-6px 0 14px;">A view of the room — see the list below for who's seated where.</p>
+      <p class="c-guest-meta" style="text-align:center; margin:-6px 0 14px;">A view of the venue — see the list below for who's seated where.</p>
       ` : ''}
       ${data.tables.map((t) => {
         const assigned = data.assignments.filter((a) => a.table_id === t.id);
         return `<div class="c-card c-seat-table">
           <div class="c-card-header"><strong>Table ${t.table_number}${t.reserved_for ? ` <span class="c-pill unconfirmed" style="margin-left:6px;">${escapeHtml(t.reserved_for)}</span>` : ''}</strong><span class="c-guest-meta">${assigned.length}${t.seat_count ? '/' + t.seat_count : ''}</span></div>
-          ${assigned.length ? assigned.map((a) => `<div class="c-seat-slot"><span>${a.seat_number ? 'Seat ' + a.seat_number + ' — ' : ''}<span class="c-name-script">${escapeHtml(a.guest ? a.guest.full_name : '—')}</span></span>${a.guest && a.guest.status === 'confirmed' ? '<span class="c-seal" title="Confirmed">&#10003;</span>' : `<span class="c-pill ${a.guest ? pillClass(a.guest.status) : 'muted'}">${a.guest ? a.guest.status.replace('_', ' ') : ''}</span>`}</div>`).join('') : '<p class="c-guest-meta">No one seated here yet.</p>'}
+          ${assigned.length ? assigned.map((a) => `<div class="c-seat-slot"><span>${a.seat_number ? 'Seat ' + a.seat_number + ' — ' : ''}${escapeHtml(a.guest ? a.guest.full_name : '—')}</span>${a.guest && a.guest.status === 'confirmed' ? `<span class="c-seal" title="Confirmed">${sealCheck()}</span>` : `<span class="c-pill ${a.guest ? pillClass(a.guest.status) : 'muted'}">${a.guest ? a.guest.status.replace('_', ' ') : ''}</span>`}</div>`).join('') : '<p class="c-guest-meta">No one seated here yet.</p>'}
         </div>`;
       }).join('') || '<div class="c-empty">Your planner hasn\'t added tables yet.</div>'}
-      ${data.unseated.length ? `<div class="c-card"><strong>Not yet seated (${data.unseated.length})</strong><div style="margin-top:8px;">${data.unseated.map((g) => `<div class="c-seat-slot"><span class="c-name-script">${escapeHtml(g.full_name)}</span>${g.status === 'confirmed' ? '<span class="c-seal" title="Confirmed">&#10003;</span>' : `<span class="c-pill ${pillClass(g.status)}">${g.status.replace('_', ' ')}</span>`}</div>`).join('')}</div></div>` : ''}
+      ${data.unseated.length ? `<div class="c-card"><strong>Not yet seated (${data.unseated.length})</strong><div style="margin-top:8px;">${data.unseated.map((g) => `<div class="c-seat-slot"><span>${escapeHtml(g.full_name)}</span>${g.status === 'confirmed' ? `<span class="c-seal" title="Confirmed">${sealCheck()}</span>` : `<span class="c-pill ${pillClass(g.status)}">${g.status.replace('_', ' ')}</span>`}</div>`).join('')}</div></div>` : ''}
     `;
   }
 

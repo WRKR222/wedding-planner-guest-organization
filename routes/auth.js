@@ -23,7 +23,7 @@ function register(router) {
     const { count } = await admin().from('planner_profiles').select('id', { count: 'exact', head: true });
     const isFirstPlanner = (count || 0) === 0;
     await admin().from('planner_profiles').insert({
-      id: created.user.id, email, name, is_admin: isFirstPlanner, // first account on the project becomes the demo super-admin (FR37)
+      id: created.user.id, email, name, is_admin: isFirstPlanner, // first account on the project becomes the system admin
     });
 
     const { data: signIn, error: signInErr } = await anon().auth.signInWithPassword({ email, password: body.password });

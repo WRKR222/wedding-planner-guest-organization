@@ -59,7 +59,7 @@ git push -u origin main
    | `SUPABASE_URL` | from step 1 |
    | `SUPABASE_ANON_KEY` | from step 1 |
    | `SUPABASE_SERVICE_ROLE_KEY` | from step 1 — **mark it "sensitive"/server-only if Netlify offers that toggle** |
-   | `PLANNER_FALLBACK_PHONE` | optional — the phone number templated into every invite message as the voice-call fallback (FR8.1) |
+   | `PLANNER_FALLBACK_PHONE` | optional — the phone number templated into every invite message as the voice-call fallback |
 
 4. Deploy. The build runs `scripts/generate-config.js`, which writes
    `public/config.js` from `SUPABASE_URL`/`SUPABASE_ANON_KEY` — this is what

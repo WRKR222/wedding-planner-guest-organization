@@ -12,7 +12,7 @@ create extension if not exists "pgcrypto";
 -- ------------------------------------------------------------
 -- Planner accounts — Supabase Auth (auth.users) holds the actual
 -- credential; this table holds the profile fields the app needs
--- (display name, super-admin flag for FR37) that auth.users doesn't.
+-- (display name, super-admin flag) that auth.users doesn't.
 -- ------------------------------------------------------------
 create table if not exists planner_profiles (
   id uuid primary key references auth.users(id) on delete cascade,
@@ -32,7 +32,7 @@ create table if not exists weddings (
 
   wedding_status text check (wedding_status in ('active','postponed','cancelled')) default 'active',
 
-  -- module flags (planner-controlled, FR0.2). Guest List itself is not a
+  -- module flags (planner-controlled). Guest List itself is not a
   -- flag — it's the always-on foundation every wedding uses.
   automation_enabled boolean default false,
   couple_site_enabled boolean default false,
@@ -53,7 +53,7 @@ create table if not exists weddings (
   updated_at timestamptz default now()
 );
 
--- Who can manage a wedding as a planner-level user (FR35).
+-- Who can manage a wedding as a planner-level user.
 create table if not exists wedding_members (
   id uuid primary key default gen_random_uuid(),
   wedding_id uuid references weddings(id) on delete cascade,
@@ -63,8 +63,8 @@ create table if not exists wedding_members (
   unique (wedding_id, user_id)
 );
 
--- Separate, lower-trust access record for the couple companion site
--- (FR29a, NFR3, FR36). Deliberately not the same mechanism as planner auth,
+-- Separate, lower-trust access record for the couple companion site.
+-- Deliberately not the same mechanism as planner auth,
 -- so a leaked passcode can never reach planner-level access or any other
 -- wedding's data.
 create table if not exists couple_site_access (
@@ -85,8 +85,8 @@ create table if not exists couple_sessions (
   created_at timestamptz default now()
 );
 
--- Guests. phone_number is nullable (FR1.6 — a names-only paper import is
--- valid). updated_at + is_deleted + client_generated_id support the
+-- Guests. phone_number is nullable — a names-only paper import is
+-- valid. updated_at + is_deleted + client_generated_id support the
 -- offline-first sync model (architecture §7).
 create table if not exists guests (
   id uuid primary key default gen_random_uuid(),
@@ -114,7 +114,7 @@ create index if not exists idx_guests_wedding_active on guests(wedding_id) where
 -- lets a retried offline-queue flush upsert instead of double-inserting
 create unique index if not exists uq_guest_client_id on guests(wedding_id, client_generated_id) where client_generated_id is not null;
 
--- Full audit trail of every status change (NFR4).
+-- Full audit trail of every status change.
 create table if not exists rsvp_status_history (
   id uuid primary key default gen_random_uuid(),
   guest_id uuid references guests(id) on delete cascade,
@@ -124,7 +124,7 @@ create table if not exists rsvp_status_history (
   changed_at timestamptz default now()
 );
 
--- Venue layout (FR19-23). Extended with a real spatial position so a table
+-- Venue layout. Extended with a real spatial position so a table
 -- can be placed on a floor plan the way a planner would actually sketch one
 -- (round vs rectangular, positioned relative to the head table/dance floor/
 -- entrance) — not just an abstract numbered card.
@@ -172,7 +172,7 @@ create table if not exists layout_markers (
   created_at timestamptz default now()
 );
 
--- No requirement that the guest be 'confirmed' before seating (FR20) — any
+-- No requirement that the guest be 'confirmed' before seating — any
 -- guest_id valid for the wedding may be seated.
 create table if not exists seat_assignments (
   id uuid primary key default gen_random_uuid(),
@@ -185,7 +185,7 @@ create table if not exists seat_assignments (
   unique (guest_id)
 );
 
--- Message delivery log — only populated for weddings with automation_enabled (NFR2).
+-- Message delivery log — only populated for weddings with automation_enabled.
 create table if not exists message_log (
   id uuid primary key default gen_random_uuid(),
   guest_id uuid references guests(id) on delete cascade,
@@ -196,7 +196,7 @@ create table if not exists message_log (
   sent_at timestamptz default now()
 );
 
--- Staging area for document/photo guest-list imports (FR1.1-FR1.6, §8). A
+-- Staging area for document/photo guest-list imports. A
 -- batch always starts here and only becomes real guests rows once the
 -- planner reviews and confirms it.
 create table if not exists guest_import_batches (

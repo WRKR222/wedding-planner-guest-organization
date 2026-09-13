@@ -86,14 +86,7 @@ function register(router) {
     sendJSON(res, 200, batch);
   });
 
-  router.get('/api/weddings/:id/import', async (req, res, params) => {
-    const ctx = await resolveWeddingActor(req, res, params.id);
-    if (!ctx) return;
-    const { data: batches } = await admin().from('guest_import_batches').select('*').eq('wedding_id', ctx.wedding.id).order('created_at', { ascending: false });
-    sendJSON(res, 200, batches || []);
-  });
-
-  // FR1.3/FR1.5: planner-reviewed rows become real guest records, tagged
+  // Planner-reviewed rows become real guest records, tagged
   // with import_batch_id.
   router.post('/api/weddings/:id/import/:batchId/confirm', async (req, res, params, body) => {
     const ctx = await resolveWeddingActor(req, res, params.id);

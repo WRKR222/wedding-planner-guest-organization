@@ -17,8 +17,6 @@
 
   const ICON_GRID = '<svg class="nav-icon" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="2.5" y="2.5" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.5"/><rect x="11.5" y="2.5" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.5"/><rect x="2.5" y="11.5" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.5"/><rect x="11.5" y="11.5" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.5"/></svg>';
 
-  const ICON_SHIELD = '<svg class="nav-icon" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10 2.5l6 2.2v4.6c0 4-2.6 6.9-6 8.2-3.4-1.3-6-4.2-6-8.2V4.7l6-2.2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M7.3 10l1.8 1.8 3.6-3.6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-
   function loadJSON(k, d) { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch (e) { return d; } }
   function saveAuth() {
     if (state.token) localStorage.setItem('wrsvp:planner:token', state.token);
@@ -139,13 +137,11 @@
 
   // ------------------------------------------------------------- app shell
   function shell(innerHTML, activeNav) {
-    const admin = state.planner && state.planner.is_admin;
     app.innerHTML = `
       <div class="app-shell">
         <nav class="sidebar">
           <div class="brand">Callsheet<small>Day-of ops, every wedding</small></div>
           <div class="nav-tab ${activeNav === 'weddings' ? 'active' : ''}" data-nav="weddings">${ICON_GRID} Weddings</div>
-          ${admin ? `<div class="nav-tab ${activeNav === 'admin' ? 'active' : ''}" data-nav="admin">${ICON_SHIELD} Admin overview</div>` : ''}
           <div class="sidebar-footer">
             <div>Signed in as<br /><strong style="color:var(--ink)">${escapeHtml(state.planner.name)}</strong><br />
             <a href="#" id="sign-out" style="color:var(--muted)">Sign out</a></div>
@@ -155,7 +151,7 @@
       </div>`;
     app.querySelectorAll('[data-nav]').forEach((el) => el.onclick = () => {
       state.weddingId = null;
-      state.tab = el.dataset.nav === 'admin' ? 'admin' : 'overview';
+      state.tab = 'overview';
       render();
     });
     document.getElementById('sign-out').onclick = (e) => { e.preventDefault(); signOut(); };
@@ -168,7 +164,6 @@
   }
 
   async function renderDashboard() {
-    if (state.tab === 'admin') return renderAdmin();
     await loadWeddings();
     const rows = state.weddings.map((w) => `
       <tr data-open="${w.id}" style="cursor:pointer;">
@@ -220,30 +215,6 @@
     return mods.map(([label, on]) => `<span class="badge ${on ? 'badge-on' : ''}" style="margin-right:4px;">${label}</span>`).join('');
   }
 
-  async function renderAdmin() {
-    let rows = [];
-    try { rows = await Api.get('/api/admin/weddings'); } catch (e) { toast(e.message, 'err'); }
-    shell(`
-      <div class="topbar"><div><div class="breadcrumb">System owner view — FR37</div><h1>All weddings, all planners</h1></div></div>
-      <p class="hint" style="margin-bottom:16px;">Support &amp; billing visibility across the platform — which modules each wedding runs, and message volume for cost tracking (NFR2).</p>
-      <div class="card card-flush">
-        <div class="table-wrap"><table>
-          <thead><tr><th>Couple</th><th>Planner</th><th>Modules</th><th>Guests</th><th>Messages sent</th><th>Status</th></tr></thead>
-          <tbody>
-            ${rows.map((w) => `<tr>
-              <td><strong>${escapeHtml(w.couple_names)}</strong><div class="hint">${fmtDate(w.event_date)}</div></td>
-              <td class="mono">${escapeHtml(w.planner_email)}</td>
-              <td>${moduleBadges(w)}</td>
-              <td>${w.guest_count}</td>
-              <td>${w.message_count}</td>
-              <td><span class="badge ${w.wedding_status === 'active' ? 'badge-on' : ''}">${w.wedding_status}</span></td>
-            </tr>`).join('')}
-          </tbody>
-        </table></div>
-      </div>
-    `, 'admin');
-  }
-
   function openNewWeddingModal() {
     showModal(`
       <h2>New wedding</h2>
@@ -252,9 +223,13 @@
         <div class="field"><label>Couple names</label><input name="couple_names" required placeholder="Zawadi & Kevin" /></div>
         <div class="field-row">
           <div class="field"><label>Event date</label><input name="event_date" type="date" required /></div>
-          <div class="field"><label>RSVP cutoff</label><input name="rsvp_cutoff" type="date" required /></div>
+          <div class="field">
+            <label>RSVP cutoff <span class="hint">(optional)</span></label>
+            <input name="rsvp_cutoff" type="date" />
+            <p class="hint">Don't know yet? Leave it blank — you can set it later from this wedding's Settings tab.</p>
+          </div>
         </div>
-        <div class="field"><label>Venue</label><input name="venue" placeholder="Hillside Gardens, Karen" /></div>
+        <div class="field"><label>Venue <span class="hint">(optional)</span></label><input name="venue" placeholder="Hillside Gardens, Karen" /></div>
         <button class="btn btn-primary" type="submit" style="width:100%; justify-content:center;">Create wedding</button>
       </form>
     `);
@@ -451,7 +426,7 @@
     body.innerHTML = `
       <div class="card">
         <h2>Import a guest list</h2>
-        <p class="hint">Type or paste names, upload a CSV/TXT file, or upload a document/photo. Nothing is added to the guest list until you review and confirm it below (FR1.3).</p>
+        <p class="hint">Type or paste names, upload a CSV/TXT file, or upload a document/photo. Nothing is added to the guest list until you review and confirm it below.</p>
         <div class="field">
           <label>Paste a list — one guest per line, or "Name, phone, category"</label>
           <textarea id="paste-text" rows="6" placeholder="Wanjiru Kamau, +254712000021, family
@@ -467,7 +442,6 @@ Grace Mwangi, +254712000043"></textarea>
         </div>
       </div>
       <div id="import-preview"></div>
-      <div id="import-history"></div>
     `;
     document.getElementById('parse-paste-btn').onclick = async () => {
       const text = document.getElementById('paste-text').value;
@@ -493,7 +467,6 @@ Grace Mwangi, +254712000043"></textarea>
       };
       reader.readAsDataURL(file);
     };
-    renderImportHistory(w);
   }
 
   function renderImportPreview(w, batch) {
@@ -534,29 +507,12 @@ Grace Mwangi, +254712000043"></textarea>
         toast(`Added ${r.created_count} guest${r.created_count === 1 ? '' : 's'}`);
         el.innerHTML = '';
         ensureStore(w.id).refresh();
-        renderImportHistory(w);
       } catch (err) { toast(err.message, 'err'); }
     };
     document.getElementById('discard-import-btn').onclick = async () => {
       await Api.post(`/api/weddings/${w.id}/import/${batch.id}/discard`, {});
       el.innerHTML = '';
-      renderImportHistory(w);
     };
-  }
-
-  async function renderImportHistory(w) {
-    const el = document.getElementById('import-history');
-    if (!el) return;
-    const batches = await Api.get(`/api/weddings/${w.id}/import`);
-    if (!batches.length) { el.innerHTML = ''; return; }
-    el.innerHTML = `
-      <div class="card">
-        <h3>Import history</h3>
-        <div class="table-wrap"><table>
-          <thead><tr><th>File</th><th>Type</th><th>Status</th><th>Uploaded by</th><th>When</th></tr></thead>
-          <tbody>${batches.map((b) => `<tr><td>${escapeHtml(b.original_filename)}</td><td>${b.source_type}</td><td><span class="badge ${b.status === 'confirmed' ? 'badge-on' : ''}">${b.status}</span></td><td>${b.uploaded_by}</td><td class="hint">${new Date(b.created_at).toLocaleString()}</td></tr>`).join('')}</tbody>
-        </table></div>
-      </div>`;
   }
 
   // ------------------------------------------------------------- seating
@@ -639,20 +595,32 @@ Grace Mwangi, +254712000043"></textarea>
   function renderTableCard(t, data, granularity) {
     const assigned = data.assignments.filter((a) => a.table_id === t.id);
     const seatSlots = granularity === 'table_only' ? [] : Array.from({ length: t.seat_count || 8 }, (_, i) => i + 1);
+    // In table-and-seat weddings, a guest can still be placed at a table
+    // without a specific seat number — e.g. an overflow/standing group, or
+    // a table the planner hasn't gotten around to seat-by-seat yet.
+    const tableOnlyGuests = granularity === 'table_and_seat' ? assigned.filter((a) => a.seat_number == null) : [];
+    const unassignedRow = (a) => `<div class="seat-slot filled">${escapeHtml(a.guest ? a.guest.full_name : '—')} ${statusChip(a.guest)} <span class="hint">· no seat assigned</span><span data-unseat="${a.guest_id}" style="cursor:pointer;color:var(--cue)">&times;</span></div>`;
     return `
       <div class="seat-table">
         <h4>Table ${t.table_number} <span class="hint">${assigned.length}${t.seat_count ? '/' + t.seat_count : ''}</span></h4>
-        <div data-drop-table="${t.id}" style="min-height:40px;">
-          ${granularity === 'table_only'
-            ? assigned.map((a) => `<div class="seat-slot filled">${escapeHtml(a.guest ? a.guest.full_name : '—')} ${statusChip(a.guest)}<span data-unseat="${a.guest_id}" style="cursor:pointer;color:var(--cue)">&times;</span></div>`).join('') + `<div class="seat-slot" data-drop-table="${t.id}"><span class="empty-lbl">Drop a guest here</span></div>`
-            : seatSlots.map((sn) => {
-                const a = assigned.find((x) => x.seat_number === sn);
-                return `<div class="seat-slot ${a ? 'filled' : ''}" data-drop-table="${t.id}" data-seat-number="${sn}">
-                  <span>Seat ${sn}: ${a ? escapeHtml(a.guest ? a.guest.full_name : '—') + statusChip(a.guest) : '<span class="empty-lbl">empty</span>'}</span>
-                  ${a ? `<span data-unseat="${a.guest_id}" style="cursor:pointer;color:var(--cue)">&times;</span>` : ''}
-                </div>`;
-              }).join('')}
-        </div>
+        ${granularity === 'table_only' ? `
+          <div data-drop-table="${t.id}" style="min-height:40px;">
+            ${assigned.map((a) => `<div class="seat-slot filled">${escapeHtml(a.guest ? a.guest.full_name : '—')} ${statusChip(a.guest)}<span data-unseat="${a.guest_id}" style="cursor:pointer;color:var(--cue)">&times;</span></div>`).join('')}
+            <div class="seat-slot" data-drop-table="${t.id}"><span class="empty-lbl">Drop a guest here</span></div>
+          </div>
+        ` : `
+          <div style="min-height:40px;">
+            ${tableOnlyGuests.map(unassignedRow).join('')}
+            <div class="seat-slot" data-drop-table="${t.id}"><span class="empty-lbl">Assign to this table only — no specific seat</span></div>
+            ${seatSlots.map((sn) => {
+              const a = assigned.find((x) => x.seat_number === sn);
+              return `<div class="seat-slot ${a ? 'filled' : ''}" data-drop-table="${t.id}" data-seat-number="${sn}">
+                <span>Seat ${sn}: ${a ? escapeHtml(a.guest ? a.guest.full_name : '—') + statusChip(a.guest) : '<span class="empty-lbl">empty</span>'}</span>
+                ${a ? `<span data-unseat="${a.guest_id}" style="cursor:pointer;color:var(--cue)">&times;</span>` : ''}
+              </div>`;
+            }).join('')}
+          </div>
+        `}
       </div>`;
   }
 
@@ -1007,7 +975,7 @@ Grace Mwangi, +254712000043"></textarea>
       <div class="card">
         <div class="card-header"><h3>Invite template</h3></div>
         <textarea id="tpl-text" rows="4">${escapeHtml(tpl.invite_template)}</textarea>
-        <p class="hint">Variables: {guest_name} {couple_names} {date} {venue} {deadline}. Every message always also appends a phone-call fallback line (FR8.1). ${tpl.whatsapp_live ? 'Live WhatsApp sends use the approved template text from Meta Business Manager, not this field — this text is used for the SMS fallback.' : ''}</p>
+        <p class="hint">Variables: {guest_name} {couple_names} {date} {venue} {deadline}. Every message always also appends a phone-call fallback line. ${tpl.whatsapp_live ? 'Live WhatsApp sends use the approved template text from Meta Business Manager, not this field — this text is used for the SMS fallback.' : ''}</p>
         <button class="btn" id="save-tpl-btn">Save template</button>
       </div>
       <div class="card-header">
@@ -1051,7 +1019,7 @@ Grace Mwangi, +254712000043"></textarea>
     body.innerHTML = `
       <div class="card">
         <h3>Share with the couple</h3>
-        <p class="hint">A passcode specific to this wedding only — never a global code, never the planner login (NFR3/FR36).</p>
+        <p class="hint">A passcode specific to this wedding only — never a global code, never the planner login.</p>
         <div class="field"><label>Companion site link</label><input readonly value="${link}" onclick="this.select()" /></div>
         <div class="field"><label>Passcode</label><input readonly class="mono" value="${access ? access.access_code : ''}" onclick="this.select()" /></div>
         ${access && access.revoked ? '<p style="color:var(--cue)">Access is currently revoked.</p>' : ''}
@@ -1062,7 +1030,7 @@ Grace Mwangi, +254712000043"></textarea>
       </div>
       <div class="card">
         <h3>Branding</h3>
-        <p class="hint">Google Fonts only, from a curated elegant pairing list — never free text (NFR9).</p>
+        <p class="hint">Google Fonts only, from a curated elegant pairing list — never free text.</p>
         <div class="field-row">
           <div class="field"><label>Primary color</label><input type="color" id="primary-color" value="${w.theme.primary}" /></div>
           <div class="field"><label>Accent color</label><input type="color" id="accent-color" value="${w.theme.accent}" /></div>
@@ -1091,7 +1059,7 @@ Grace Mwangi, +254712000043"></textarea>
     body.innerHTML = `
       <div class="card">
         <h3>Modules</h3>
-        <p class="hint">Turning a module on or off never deletes any data (FR0.5/FR0.6).</p>
+        <p class="hint">Turning a module on or off never deletes any data.</p>
         <div style="display:flex; flex-direction:column; gap:14px; margin-top:10px;">
           ${moduleToggle('automation_enabled', 'Automated invite & reminder sending', 'WhatsApp → SMS fallback, always with a phone-call fallback line.', w)}
           ${moduleToggle('couple_site_enabled', 'Couple companion site', 'A bespoke-branded mini-site the couple can log into with a passcode.', w)}
@@ -1122,13 +1090,13 @@ Grace Mwangi, +254712000043"></textarea>
             <div class="field"><label>RSVP cutoff</label><input name="rsvp_cutoff" type="date" value="${w.rsvp_cutoff}" /></div>
           </div>
           <div class="field"><label>Venue</label><input name="venue" value="${escapeAttr(w.venue || '')}" /></div>
-          <p class="hint">Changing these never auto-notifies guests — that's always a separate, explicit action (FR0.3).</p>
+          <p class="hint">Changing these never auto-notifies guests — that's always a separate, explicit action.</p>
           <button class="btn btn-primary" type="submit">Save details</button>
         </form>
       </div>
-      <div class="card" style="border-color: ${w.wedding_status === 'active' ? 'var(--ink-800)' : 'var(--cue-soft)'};">
+      <div class="card" style="border-color: ${w.wedding_status === 'active' ? 'var(--border)' : 'var(--cue-soft)'};">
         <h3>Wedding status</h3>
-        <p class="hint">Postponing or cancelling freezes automated sending and seating edits, but keeps every record (FR0.4).</p>
+        <p class="hint">Postponing or cancelling freezes automated sending and seating edits, but keeps every record.</p>
         <div style="display:flex; gap:8px;">
           <button class="btn ${w.wedding_status === 'active' ? 'btn-primary' : ''}" data-status="active">Active</button>
           <button class="btn ${w.wedding_status === 'postponed' ? 'btn-primary' : ''}" data-status="postponed">Postponed</button>
@@ -1170,11 +1138,17 @@ Grace Mwangi, +254712000043"></textarea>
   function showModal(html) {
     const backdrop = document.createElement('div');
     backdrop.className = 'modal-backdrop';
-    backdrop.innerHTML = `<div class="modal">${html}</div>`;
+    backdrop.innerHTML = `<div class="modal"><button type="button" class="modal-close" aria-label="Close">&times;</button>${html}</div>`;
     backdrop.onclick = (e) => { if (e.target === backdrop) closeModal(); };
+    backdrop.querySelector('.modal-close').onclick = () => closeModal();
     document.body.appendChild(backdrop);
+    document.addEventListener('keydown', closeModalOnEscape);
   }
-  function closeModal() { document.querySelectorAll('.modal-backdrop').forEach((m) => m.remove()); }
+  function closeModalOnEscape(e) { if (e.key === 'Escape') closeModal(); }
+  function closeModal() {
+    document.querySelectorAll('.modal-backdrop').forEach((m) => m.remove());
+    document.removeEventListener('keydown', closeModalOnEscape);
+  }
   function escapeHtml(s) { return String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
   function escapeAttr(s) { return escapeHtml(s); }
 

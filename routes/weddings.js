@@ -10,7 +10,7 @@ const FONT_PAIRINGS = [
   { key: 'italiana_montserrat', label: 'Italiana + Montserrat', heading: "'Italiana', serif", body: "'Montserrat', sans-serif" },
   { key: 'marcellus_jost', label: 'Marcellus + Jost', heading: "'Marcellus', serif", body: "'Jost', sans-serif" },
   { key: 'ebgaramond_worksans', label: 'EB Garamond + Work Sans', heading: "'EB Garamond', serif", body: "'Work Sans', sans-serif" },
-]; // NFR9: curated Google Fonts only, never free-text font entry. First entry is the default pairing.
+]; // Curated Google Fonts only, never free-text font entry. First entry is the default pairing.
 
 async function weddingSummary(w) {
   const db = admin();
@@ -57,7 +57,10 @@ function register(router) {
     sendJSON(res, 200, withSummary);
   });
 
-  // FR37 — super-admin cross-wedding/cross-planner view
+  // Cross-wedding, cross-planner oversight — support & billing visibility
+  // for the system owner, not something a regular planner's own dashboard
+  // shows (that's just their weddings, via GET /api/weddings above). Served
+  // from a separate admin.html surface, never linked from the planner nav.
   router.get('/api/admin/weddings', async (req, res) => {
     const planner = await requireAuthed(req, res);
     if (!planner) return;
@@ -84,17 +87,20 @@ function register(router) {
     sendJSON(res, 200, rows);
   });
 
-  // FR0.1 — create a wedding. Guest List module is always-on (not a flag).
+  // Create a wedding. Guest List module is always-on (not a flag). Only
+  // couple_names and event_date are required up front — a couple often
+  // doesn't know their RSVP cutoff yet, so it defaults to the event date
+  // itself as a placeholder the planner can tighten up later from Settings.
   router.post('/api/weddings', async (req, res, params, body) => {
     const planner = await requireAuthed(req, res);
     if (!planner) return;
-    if (!body.couple_names || !body.event_date || !body.rsvp_cutoff) {
-      return sendJSON(res, 400, { error: 'couple_names, event_date, and rsvp_cutoff are required' });
+    if (!body.couple_names || !body.event_date) {
+      return sendJSON(res, 400, { error: 'couple_names and event_date are required' });
     }
     const db = admin();
     const { data: wedding, error } = await db.from('weddings').insert({
       couple_names: body.couple_names, event_date: body.event_date,
-      venue: body.venue || null, rsvp_cutoff: body.rsvp_cutoff,
+      venue: body.venue || null, rsvp_cutoff: body.rsvp_cutoff || body.event_date,
     }).select().single();
     if (error) return sendJSON(res, 500, { error: error.message });
     await db.from('wedding_members').insert({ wedding_id: wedding.id, user_id: planner.id, role: 'owner' });
@@ -107,7 +113,7 @@ function register(router) {
     sendJSON(res, 200, await weddingSummary(ctx.wedding));
   });
 
-  // FR0.3 — event detail edits never auto-notify guests
+  // Event detail edits never auto-notify guests
   router.patch('/api/weddings/:id', async (req, res, params, body) => {
     const ctx = await requireWeddingAccess(req, res, params);
     if (!ctx) return;
@@ -120,7 +126,7 @@ function register(router) {
     sendJSON(res, 200, await weddingSummary(wedding));
   });
 
-  // FR0.2, FR0.5 — module toggles. Enabling a module never touches existing data.
+  // Module toggles. Enabling a module never touches existing data.
   router.patch('/api/weddings/:id/modules', async (req, res, params, body) => {
     const ctx = await requireWeddingAccess(req, res, params);
     if (!ctx) return;
@@ -137,8 +143,8 @@ function register(router) {
 
     let wedding = { ...ctx.wedding, ...patch };
 
-    // First time the couple site is turned on, provision access (FR29a) —
-    // reuse the existing code if it already exists (FR0.6).
+    // First time the couple site is turned on, provision access —
+    // reuse the existing code if it already exists.
     if (patch.couple_site_enabled) {
       const { data: existing } = await db.from('couple_site_access').select('*').eq('wedding_id', ctx.wedding.id).maybeSingle();
       if (!existing) {
@@ -157,7 +163,7 @@ function register(router) {
     sendJSON(res, 200, await weddingSummary(updated));
   });
 
-  // FR30 — bespoke branding: curated colors + a Google Font pairing only
+  // Bespoke branding: curated colors + a Google Font pairing only
   router.patch('/api/weddings/:id/theme', async (req, res, params, body) => {
     const ctx = await requireWeddingAccess(req, res, params);
     if (!ctx) return;
@@ -175,7 +181,7 @@ function register(router) {
     sendJSON(res, 200, await weddingSummary(wedding));
   });
 
-  // FR0.4 — postpone/cancel/reactivate. Freezes automation + seating writes; keeps history.
+  // Postpone/cancel/reactivate. Freezes automation + seating writes; keeps history.
   router.patch('/api/weddings/:id/status', async (req, res, params, body) => {
     const ctx = await requireWeddingAccess(req, res, params);
     if (!ctx) return;
@@ -187,7 +193,7 @@ function register(router) {
     sendJSON(res, 200, await weddingSummary(wedding));
   });
 
-  // Couple-site credential management (FR29a, FR36) — planner-only.
+  // Couple-site credential management — planner-only.
   router.get('/api/weddings/:id/couple-access', async (req, res, params) => {
     const ctx = await requireWeddingAccess(req, res, params);
     if (!ctx) return;
