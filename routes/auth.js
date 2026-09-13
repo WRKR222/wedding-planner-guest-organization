@@ -1,6 +1,7 @@
 // routes/auth.js
 const { admin, anon } = require('../lib/supabase');
 const { sendJSON } = require('../lib/http');
+const { seedDemo, DEMO_EMAIL } = require('../lib/seed-demo');
 
 function register(router) {
   router.post('/api/auth/signup', async (req, res, params, body) => {
@@ -51,6 +52,30 @@ function register(router) {
       token: data.session.access_token,
       planner: { id: profile.id, email: profile.email, name: profile.name, is_admin: profile.is_admin },
     });
+  });
+
+  // Self-serve demo data for a fresh deploy — the sign-in screen offers this
+  // when the demo login fails because nobody has run scripts/seed-demo.js
+  // yet. Only usable before any real planner exists (or if the demo account
+  // itself is the only thing missing), so it can't be used to spam-create
+  // data once the deployment has real users.
+  router.post('/api/auth/seed-demo', async (req, res) => {
+    const db = admin();
+    const { count } = await db.from('planner_profiles').select('id', { count: 'exact', head: true });
+    if ((count || 0) > 0) {
+      const { data: demoProfile } = await db.from('planner_profiles').select('id').eq('email', DEMO_EMAIL).maybeSingle();
+      if (!demoProfile) {
+        return sendJSON(res, 403, {
+          error: 'Demo seeding is only available before any real planner has signed up on this deployment. Ask whoever manages it to run "node scripts/seed-demo.js" instead.',
+        });
+      }
+    }
+    try {
+      await seedDemo(db);
+      sendJSON(res, 200, { ok: true });
+    } catch (e) {
+      sendJSON(res, 500, { error: e.message });
+    }
   });
 }
 

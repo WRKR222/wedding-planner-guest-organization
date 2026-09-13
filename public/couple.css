@@ -92,6 +92,11 @@ body.couple-body {
 .c-guest-name { font-weight: 600; }
 .c-guest-meta { font-size: 0.78rem; color: var(--c-muted); }
 
+/* A guest's own name, wherever it's written out on the companion site —
+   the guest list, seating cards — gets the same script heading font as
+   the couple's names, like a hand-lettered place card. */
+.c-name-script { font-family: var(--c-heading-font); font-weight: 400; font-size: 1.2em; letter-spacing: 0.01em; }
+
 /* the one signature element: a pressed wax seal for confirmed guests —
    built from layered gradients (no color-mix() dependency) so it renders
    correctly whatever primary color a couple picks. */

@@ -83,6 +83,14 @@ couple companion site at `/couple/zawadi-and-kevin-demo` (passcode
 `AMBER-2026`). Safe to re-run — it detects the existing demo account/wedding
 and skips.
 
+Forgot this step? You don't have to come back and run it from a terminal —
+if you try the demo login on the deployed site and it fails because the
+account doesn't exist yet, the sign-in screen shows a "Set up the demo
+account now" link that does the same thing over the API (`POST
+/api/auth/seed-demo`). It only works before any real planner has signed up
+(or if the demo account is the only thing missing), so it can't be used to
+inject data once the deployment has real users.
+
 For your own real weddings, just sign up a real planner account at
 `/planner.html` and click "+ New wedding" — no script needed.
 

@@ -159,7 +159,7 @@
             <div class="c-guest-name-wrap">
               ${g.status === 'confirmed' ? '<span class="c-seal" title="Confirmed">&#10003;</span>' : '<span class="c-seal-empty" title="' + g.status.replace('_', ' ') + '"></span>'}
               <div>
-                <div class="c-guest-name">${escapeHtml(g.full_name)} ${g.__pending ? '<span class="c-guest-meta">· saving…</span>' : ''}</div>
+                <div class="c-guest-name"><span class="c-name-script">${escapeHtml(g.full_name)}</span> ${g.__pending ? '<span class="c-guest-meta">· saving…</span>' : ''}</div>
                 <div class="c-guest-meta">${g.phone_number ? escapeHtml(g.phone_number) : 'No phone on file'}${g.seat ? ` · Table ${g.seat.table_number ?? '—'}` : ''}</div>
               </div>
             </div>
@@ -232,10 +232,10 @@
         const assigned = data.assignments.filter((a) => a.table_id === t.id);
         return `<div class="c-card c-seat-table">
           <div class="c-card-header"><strong>Table ${t.table_number}${t.reserved_for ? ` <span class="c-pill unconfirmed" style="margin-left:6px;">${escapeHtml(t.reserved_for)}</span>` : ''}</strong><span class="c-guest-meta">${assigned.length}${t.seat_count ? '/' + t.seat_count : ''}</span></div>
-          ${assigned.length ? assigned.map((a) => `<div class="c-seat-slot"><span>${a.seat_number ? 'Seat ' + a.seat_number + ' — ' : ''}${escapeHtml(a.guest ? a.guest.full_name : '—')}</span>${a.guest && a.guest.status === 'confirmed' ? '<span class="c-seal" title="Confirmed">&#10003;</span>' : `<span class="c-pill ${a.guest ? pillClass(a.guest.status) : 'muted'}">${a.guest ? a.guest.status.replace('_', ' ') : ''}</span>`}</div>`).join('') : '<p class="c-guest-meta">No one seated here yet.</p>'}
+          ${assigned.length ? assigned.map((a) => `<div class="c-seat-slot"><span>${a.seat_number ? 'Seat ' + a.seat_number + ' — ' : ''}<span class="c-name-script">${escapeHtml(a.guest ? a.guest.full_name : '—')}</span></span>${a.guest && a.guest.status === 'confirmed' ? '<span class="c-seal" title="Confirmed">&#10003;</span>' : `<span class="c-pill ${a.guest ? pillClass(a.guest.status) : 'muted'}">${a.guest ? a.guest.status.replace('_', ' ') : ''}</span>`}</div>`).join('') : '<p class="c-guest-meta">No one seated here yet.</p>'}
         </div>`;
       }).join('') || '<div class="c-empty">Your planner hasn\'t added tables yet.</div>'}
-      ${data.unseated.length ? `<div class="c-card"><strong>Not yet seated (${data.unseated.length})</strong><div style="margin-top:8px;">${data.unseated.map((g) => `<div class="c-seat-slot"><span>${escapeHtml(g.full_name)}</span>${g.status === 'confirmed' ? '<span class="c-seal" title="Confirmed">&#10003;</span>' : `<span class="c-pill ${pillClass(g.status)}">${g.status.replace('_', ' ')}</span>`}</div>`).join('')}</div></div>` : ''}
+      ${data.unseated.length ? `<div class="c-card"><strong>Not yet seated (${data.unseated.length})</strong><div style="margin-top:8px;">${data.unseated.map((g) => `<div class="c-seat-slot"><span class="c-name-script">${escapeHtml(g.full_name)}</span>${g.status === 'confirmed' ? '<span class="c-seal" title="Confirmed">&#10003;</span>' : `<span class="c-pill ${pillClass(g.status)}">${g.status.replace('_', ' ')}</span>`}</div>`).join('')}</div></div>` : ''}
     `;
   }
 

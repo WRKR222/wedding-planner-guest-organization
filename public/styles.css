@@ -10,14 +10,13 @@
    from the branding pass carry the identity so this doesn't collapse into
    the same look as every other admin panel.
 
-   Ships in dark by default (a planner's day-of tool, often used at night
-   or in a dim venue) with a light mode available from the sidebar toggle
-   — same soft-border/pill-chip/rounded-button structure either way, just
-   re-themed via CSS custom properties on <html data-theme="...">.
+   One fixed theme app-wide (the same warm-charcoal/brass look the sign-in
+   screen has always shown) — no dark/light toggle, just this palette
+   everywhere via CSS custom properties on :root.
    ============================================================ */
 @import url('https://fonts.googleapis.com/css2?family=Alex+Brush&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
 
-:root, :root[data-theme="dark"] {
+:root {
   /* surfaces — warm charcoal, not flat black */
   --bg: #1c1913;
   --surface: #242019;
@@ -45,39 +44,7 @@
   --shadow-sm: 0 1px 2px rgba(0,0,0,0.25);
   --shadow: 0 4px 16px rgba(0,0,0,0.35);
   --shadow-lg: 0 16px 44px rgba(0,0,0,0.5);
-}
 
-:root[data-theme="light"] {
-  /* surfaces — light, soft-warm neutrals instead of stark gray */
-  --bg: #f7f5f1;
-  --surface: #ffffff;
-  --surface-alt: #fbf9f5;
-  --surface-sunken: #f1eee7;
-  --border: #e7e1d5;
-  --border-strong: #d8d0bd;
-
-  /* ink */
-  --ink: #24201a;
-  --ink-dim: #57503f;
-  --muted: #8c8371;
-
-  /* accent */
-  --brass: #b8823c;
-  --brass-hover: #a3722f;
-  --brass-soft: #fbead0;
-  --brass-soft-ink: #8a5f20;
-
-  /* state colors */
-  --confirm: #2f7a4f; --confirm-soft: #e4f4e9;
-  --cue: #c1443c;     --cue-soft: #fbeae8;
-  --info: #3a6ea5;    --info-soft: #e8f0f8;
-
-  --shadow-sm: 0 1px 2px rgba(36,32,26,0.04);
-  --shadow: 0 4px 16px rgba(36,32,26,0.06);
-  --shadow-lg: 0 16px 40px rgba(36,32,26,0.12);
-}
-
-:root {
   --radius-sm: 8px;
   --radius: 12px;
   --radius-lg: 16px;
@@ -312,14 +279,12 @@ tbody tr:last-child td { border-bottom: none; }
 .fp-table .fp-table-reserved { font-size: 0.58rem; color: var(--brass-soft-ink); font-weight: 700; text-transform: uppercase; letter-spacing: 0.02em; margin-top: 1px; }
 
 .fp-landmark {
-  position: absolute; transform: translate(-50%, -50%); background: rgba(255,255,255,0.88); border: 1.5px dashed var(--border-strong);
+  position: absolute; transform: translate(-50%, -50%); background: rgba(36,32,25,0.88); border: 1.5px dashed var(--border-strong);
   border-radius: var(--radius-sm); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
   font-size: 0.68rem; font-weight: 700; color: var(--ink-dim); text-transform: uppercase; letter-spacing: 0.03em;
   padding: 4px; text-align: center; cursor: grab; user-select: none; min-width: 64px; min-height: 40px; touch-action: none;
 }
 .fp-landmark:active { cursor: grabbing; }
-
-[data-theme="dark"] .fp-landmark { background: rgba(36,32,25,0.88); }
 
 /* ---------- Check-in ---------- */
 .checkin-row { display: flex; justify-content: space-between; align-items: center; padding: 13px 4px; border-bottom: 1px solid var(--surface-sunken); }

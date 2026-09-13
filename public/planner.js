@@ -17,14 +17,6 @@
 
   const ICON_GRID = '<svg class="nav-icon" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="2.5" y="2.5" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.5"/><rect x="11.5" y="2.5" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.5"/><rect x="2.5" y="11.5" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.5"/><rect x="11.5" y="11.5" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.5"/></svg>';
 
-  // Dark by default (a day-of tool, often used at night or in a dim venue)
-  // — light stays one tap away and the choice is remembered per browser.
-  function getTheme() { return localStorage.getItem('wrsvp:planner:theme') || 'dark'; }
-  function setTheme(t) {
-    localStorage.setItem('wrsvp:planner:theme', t);
-    document.documentElement.setAttribute('data-theme', t);
-  }
-  setTheme(getTheme());
   const ICON_SHIELD = '<svg class="nav-icon" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10 2.5l6 2.2v4.6c0 4-2.6 6.9-6 8.2-3.4-1.3-6-4.2-6-8.2V4.7l6-2.2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M7.3 10l1.8 1.8 3.6-3.6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 
   function loadJSON(k, d) { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch (e) { return d; } }
@@ -110,16 +102,33 @@
     document.getElementById('auth-form').onsubmit = async (e) => {
       e.preventDefault();
       const fd = new FormData(e.target);
+      const email = fd.get('email'), password = fd.get('password');
       const errEl = document.getElementById('auth-error');
-      errEl.textContent = '';
+      errEl.innerHTML = '';
       try {
-        const data = await Api.post(`/api/auth/${mode}`, {
-          email: fd.get('email'), password: fd.get('password'), name: fd.get('name'),
-        });
+        const data = await Api.post(`/api/auth/${mode}`, { email, password, name: fd.get('name') });
         state.token = data.token; state.planner = data.planner; saveAuth();
         await loadWeddings();
         render();
-      } catch (err) { errEl.textContent = err.message; }
+      } catch (err) {
+        // On a fresh deploy nobody has run scripts/seed-demo.js yet, so the
+        // demo credentials on this form don't exist as a real account —
+        // offer to create them on the spot instead of just saying "invalid".
+        const isDemoAttempt = mode === 'login' && email === 'planner@demo.test' && password === 'demo1234';
+        if (isDemoAttempt) {
+          errEl.innerHTML = `${escapeHtml(err.message)} — this looks like a fresh deployment with no demo data yet. <a href="#" id="seed-demo-link">Set up the demo account now</a>`;
+          document.getElementById('seed-demo-link').onclick = async (ev) => {
+            ev.preventDefault();
+            errEl.textContent = 'Setting up demo data…';
+            try {
+              await Api.post('/api/auth/seed-demo', {});
+              document.getElementById('auth-form').requestSubmit();
+            } catch (seedErr) { errEl.textContent = seedErr.message; }
+          };
+        } else {
+          errEl.textContent = err.message;
+        }
+      }
     };
   }
 
@@ -138,13 +147,6 @@
           <div class="nav-tab ${activeNav === 'weddings' ? 'active' : ''}" data-nav="weddings">${ICON_GRID} Weddings</div>
           ${admin ? `<div class="nav-tab ${activeNav === 'admin' ? 'active' : ''}" data-nav="admin">${ICON_SHIELD} Admin overview</div>` : ''}
           <div class="sidebar-footer">
-            <div style="margin-bottom:14px;">
-              <label class="toggle">
-                <input type="checkbox" id="theme-toggle" ${getTheme() === 'light' ? 'checked' : ''} />
-                <span class="track"></span>
-                <span class="toggle-label" style="font-size:0.82rem;">Light mode</span>
-              </label>
-            </div>
             <div>Signed in as<br /><strong style="color:var(--ink)">${escapeHtml(state.planner.name)}</strong><br />
             <a href="#" id="sign-out" style="color:var(--muted)">Sign out</a></div>
           </div>
@@ -157,7 +159,6 @@
       render();
     });
     document.getElementById('sign-out').onclick = (e) => { e.preventDefault(); signOut(); };
-    document.getElementById('theme-toggle').onchange = (e) => setTheme(e.target.checked ? 'light' : 'dark');
   }
 
   // ------------------------------------------------------------ dashboard
