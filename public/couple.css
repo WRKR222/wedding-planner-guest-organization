@@ -44,7 +44,13 @@ html, body { height: 100%; margin: 0; }
 body.couple-body {
   background: var(--c-bg); color: var(--c-ink); font-family: var(--c-body-font);
   font-weight: 300; font-size: 15.5px; line-height: 1.65; -webkit-font-smoothing: antialiased;
+  /* attachment:fixed sizes/positions this against the viewport instead of
+     the full scrollable page — without it, on a page taller than one
+     screen the gradient's fade-out lands partway down and shows up as a
+     visible seam once you scroll past it. */
   background-image: radial-gradient(circle at 100% 0%, rgba(255,255,255,0.04), transparent 55%);
+  background-repeat: no-repeat;
+  background-attachment: fixed;
 }
 /* Cursive stays reserved for the couple's own name — everywhere else
    (guest names, body copy) uses the plain body font for readability. */
