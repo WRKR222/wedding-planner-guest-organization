@@ -11,6 +11,9 @@
     themeInfo: null,
     tab: 'guests',
     store: null,
+    guestSearch: '',
+    statusFilter: 'all',
+    categoryFilter: 'all',
   };
 
   Api.setTokenGetter(() => state.token);
@@ -152,20 +155,66 @@
     if (state.tab === 'seating') return drawSeating();
   }
 
+  const STATUS_FILTERS = [
+    ['all', 'All'], ['confirmed', 'Confirmed'], ['unconfirmed', 'Unconfirmed'],
+    ['declined', 'Declined'], ['no_response', 'No response'], ['invited', 'Invited'],
+  ];
+
   function drawGuests() {
     const body = document.getElementById('c-body');
     if (!body) return;
     const store = ensureStore();
-    const guests = store.list();
+    const allGuests = store.list();
+
+    // Preserve the search box's focus/caret across re-renders — every
+    // keystroke redraws this whole card, and a naive innerHTML swap would
+    // otherwise drop focus after the first character typed.
+    const prevSearchEl = document.getElementById('guest-search');
+    const hadFocus = document.activeElement === prevSearchEl;
+    const caret = hadFocus ? prevSearchEl.selectionStart : null;
+
+    const categories = Array.from(new Set(allGuests.map((g) => g.category).filter(Boolean))).sort();
+    const q = state.guestSearch.trim().toLowerCase();
+    const guests = allGuests.filter((g) => {
+      if (q && !g.full_name.toLowerCase().includes(q)) return false;
+      if (state.statusFilter !== 'all' && g.status !== state.statusFilter) return false;
+      if (state.categoryFilter !== 'all' && (g.category || '') !== state.categoryFilter) return false;
+      return true;
+    });
+
+    const counts = { total: allGuests.length, confirmed: 0, unconfirmed: 0, declined: 0, no_response: 0, invited: 0 };
+    allGuests.forEach((g) => { if (counts[g.status] !== undefined) counts[g.status]++; });
+
     body.innerHTML = `
       <div class="c-card">
-        ${guests.length === 0 ? `<div class="c-empty">No guests yet — add the first one below.</div>` : guests.map((g) => `
+        <div class="c-toolbar">
+          <div class="c-search-row">
+            <input class="c-input" id="guest-search" placeholder="Search guests by name…" value="${escapeHtml(state.guestSearch)}" />
+          </div>
+          <div class="c-filter-row">
+            ${STATUS_FILTERS.map(([key, label]) => `<span class="c-chip ${state.statusFilter === key ? 'active' : ''}" data-status-filter="${key}">${label}</span>`).join('')}
+          </div>
+          ${categories.length ? `<div class="c-filter-row">
+            <span class="c-chip ${state.categoryFilter === 'all' ? 'active' : ''}" data-category-filter="all">All categories</span>
+            ${categories.map((c) => `<span class="c-chip ${state.categoryFilter === c ? 'active' : ''}" data-category-filter="${escapeHtml(c)}">${escapeHtml(c.replace(/_/g, ' '))}</span>`).join('')}
+          </div>` : ''}
+          <div class="c-count-row">
+            <span><strong>${counts.total}</strong> total</span>
+            <span><strong>${counts.confirmed}</strong> confirmed</span>
+            <span><strong>${counts.unconfirmed}</strong> unconfirmed</span>
+            <span><strong>${counts.declined}</strong> declined</span>
+            <span><strong>${counts.no_response}</strong> no response</span>
+          </div>
+        </div>
+        ${guests.length === 0
+          ? `<div class="c-empty">${allGuests.length === 0 ? 'No guests yet — add the first one below.' : 'No guests match this search/filter.'}</div>`
+          : guests.map((g) => `
           <div class="c-guest-row">
             <div class="c-guest-name-wrap">
               ${g.status === 'confirmed' ? `<span class="c-seal" title="Confirmed">${sealCheck()}</span>` : '<span class="c-seal-empty" title="' + g.status.replace('_', ' ') + '"></span>'}
               <div>
                 <div class="c-guest-name">${escapeHtml(g.full_name)} ${g.__pending ? '<span class="c-guest-meta">· saving…</span>' : ''}</div>
-                <div class="c-guest-meta">${g.phone_number ? escapeHtml(g.phone_number) : 'No phone on file'}${g.seat ? ` · Table ${g.seat.table_number ?? '—'}` : ''}</div>
+                <div class="c-guest-meta">${g.category ? escapeHtml(g.category.replace(/_/g, ' ')) + ' · ' : ''}${g.phone_number ? escapeHtml(g.phone_number) : 'No phone on file'}${g.seat ? ` · Table ${g.seat.table_number ?? '—'}` : ''}</div>
               </div>
             </div>
             <div style="display:flex; align-items:center; gap:8px;">
@@ -178,31 +227,46 @@
       </div>`;
     body.querySelectorAll('[data-crsvp]').forEach((el) => el.onchange = () => { store.rsvp(el.dataset.crsvp, el.value); toast('Updated'); });
     body.querySelectorAll('[data-cdel]').forEach((el) => el.onclick = () => { if (confirm('Remove this guest?')) { store.remove(el.dataset.cdel); toast('Removed'); } });
+    body.querySelectorAll('[data-status-filter]').forEach((el) => el.onclick = () => { state.statusFilter = el.dataset.statusFilter; drawGuests(); });
+    body.querySelectorAll('[data-category-filter]').forEach((el) => el.onclick = () => { state.categoryFilter = el.dataset.categoryFilter; drawGuests(); });
+    const searchEl = document.getElementById('guest-search');
+    searchEl.oninput = () => { state.guestSearch = searchEl.value; drawGuests(); };
+    if (hadFocus) { searchEl.focus(); searchEl.setSelectionRange(caret, caret); }
   }
+
+  function closeCoupleModal() {
+    document.querySelectorAll('.c-modal-backdrop').forEach((m) => m.remove());
+    document.removeEventListener('keydown', closeCoupleModalOnEscape);
+  }
+  function closeCoupleModalOnEscape(e) { if (e.key === 'Escape') closeCoupleModal(); }
 
   function openAddGuest(store) {
     const backdrop = document.createElement('div');
-    backdrop.className = 'c-gate';
-    backdrop.style.position = 'fixed'; backdrop.style.background = 'rgba(0,0,0,0.55)';
+    backdrop.className = 'c-modal-backdrop';
     backdrop.innerHTML = `
-      <div class="c-gate-card" style="text-align:left;">
+      <div class="c-modal">
+        <button type="button" class="c-modal-close" aria-label="Close">&times;</button>
         <h2 class="c-h2">Add a guest</h2>
         <form id="c-add-form">
           <div class="c-field"><label class="c-label">Full name</label><input class="c-input" name="full_name" required /></div>
           <div class="c-field"><label class="c-label">Phone (optional)</label><input class="c-input" name="phone_number" placeholder="+254 7XX XXX XXX" /></div>
+          <div class="c-field"><label class="c-label">Category (optional)</label><input class="c-input" name="category" placeholder="family / friend / side_bride…" /></div>
           <button class="c-btn" type="submit">Add guest</button>
           <button class="c-btn secondary" type="button" id="c-cancel" style="margin-top:8px;">Cancel</button>
         </form>
       </div>`;
     document.body.appendChild(backdrop);
-    backdrop.querySelector('#c-cancel').onclick = () => backdrop.remove();
+    document.addEventListener('keydown', closeCoupleModalOnEscape);
+    backdrop.onclick = (e) => { if (e.target === backdrop) closeCoupleModal(); };
+    backdrop.querySelector('.c-modal-close').onclick = () => closeCoupleModal();
+    backdrop.querySelector('#c-cancel').onclick = () => closeCoupleModal();
     backdrop.querySelector('#c-add-form').onsubmit = (e) => {
       e.preventDefault();
       const fd = new FormData(e.target);
-      const payload = { full_name: fd.get('full_name'), phone_number: fd.get('phone_number') || null };
+      const payload = { full_name: fd.get('full_name'), phone_number: fd.get('phone_number') || null, category: fd.get('category') || null };
       store.create(payload);
       toast('Guest added');
-      backdrop.remove();
+      closeCoupleModal();
     };
   }
 
@@ -233,13 +297,13 @@
       </div>
       <p class="c-guest-meta" style="text-align:center; margin:-6px 0 14px;">A view of the venue — see the list below for who's seated where.</p>
       ` : ''}
-      ${data.tables.map((t) => {
+      ${data.tables.length ? `<div class="c-tables-grid">${data.tables.map((t) => {
         const assigned = data.assignments.filter((a) => a.table_id === t.id);
         return `<div class="c-card c-seat-table">
           <div class="c-card-header"><strong>Table ${t.table_number}${t.reserved_for ? ` <span class="c-pill unconfirmed" style="margin-left:6px;">${escapeHtml(t.reserved_for)}</span>` : ''}</strong><span class="c-guest-meta">${assigned.length}${t.seat_count ? '/' + t.seat_count : ''}</span></div>
           ${assigned.length ? assigned.map((a) => `<div class="c-seat-slot"><span>${a.seat_number ? 'Seat ' + a.seat_number + ' — ' : ''}${escapeHtml(a.guest ? a.guest.full_name : '—')}</span>${a.guest && a.guest.status === 'confirmed' ? `<span class="c-seal" title="Confirmed">${sealCheck()}</span>` : `<span class="c-pill ${a.guest ? pillClass(a.guest.status) : 'muted'}">${a.guest ? a.guest.status.replace('_', ' ') : ''}</span>`}</div>`).join('') : '<p class="c-guest-meta">No one seated here yet.</p>'}
         </div>`;
-      }).join('') || '<div class="c-empty">Your planner hasn\'t added tables yet.</div>'}
+      }).join('')}</div>` : '<div class="c-empty">Your planner hasn\'t added tables yet.</div>'}
       ${data.unseated.length ? `<div class="c-card"><strong>Not yet seated (${data.unseated.length})</strong><div style="margin-top:8px;">${data.unseated.map((g) => `<div class="c-seat-slot"><span>${escapeHtml(g.full_name)}</span>${g.status === 'confirmed' ? `<span class="c-seal" title="Confirmed">${sealCheck()}</span>` : `<span class="c-pill ${pillClass(g.status)}">${g.status.replace('_', ' ')}</span>`}</div>`).join('')}</div></div>` : ''}
     `;
   }

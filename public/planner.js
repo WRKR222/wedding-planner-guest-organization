@@ -15,8 +15,6 @@
 
   Api.setTokenGetter(() => state.token);
 
-  const ICON_GRID = '<svg class="nav-icon" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="2.5" y="2.5" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.5"/><rect x="11.5" y="2.5" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.5"/><rect x="2.5" y="11.5" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.5"/><rect x="11.5" y="11.5" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.5"/></svg>';
-
   function loadJSON(k, d) { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch (e) { return d; } }
   function saveAuth() {
     if (state.token) localStorage.setItem('wrsvp:planner:token', state.token);
@@ -136,24 +134,25 @@
   }
 
   // ------------------------------------------------------------- app shell
-  function shell(innerHTML, activeNav) {
+  // No sidebar — with only one destination ("Weddings"), a sidebar nav was
+  // just furniture. The brand doubles as the "back to all weddings" link,
+  // and the account/sign-out info moves into a slim top header instead.
+  function shell(innerHTML) {
     app.innerHTML = `
-      <div class="app-shell">
-        <nav class="sidebar">
-          <div class="brand">Callsheet<small>Day-of ops, every wedding</small></div>
-          <div class="nav-tab ${activeNav === 'weddings' ? 'active' : ''}" data-nav="weddings">${ICON_GRID} Weddings</div>
-          <div class="sidebar-footer">
-            <div>Signed in as<br /><strong style="color:var(--ink)">${escapeHtml(state.planner.name)}</strong><br />
-            <a href="#" id="sign-out" style="color:var(--muted)">Sign out</a></div>
-          </div>
-        </nav>
-        <div class="main">${innerHTML}</div>
-      </div>`;
-    app.querySelectorAll('[data-nav]').forEach((el) => el.onclick = () => {
+      <div class="app-header">
+        <a href="#" class="brand-link" id="brand-home">Callsheet<small>Day-of ops, every wedding</small></a>
+        <div class="header-account">
+          <span class="hint">Signed in as <strong style="color:var(--ink)">${escapeHtml(state.planner.name)}</strong></span>
+          <a href="#" id="sign-out" class="btn btn-ghost btn-sm">Sign out</a>
+        </div>
+      </div>
+      <div class="main">${innerHTML}</div>`;
+    document.getElementById('brand-home').onclick = (e) => {
+      e.preventDefault();
       state.weddingId = null;
       state.tab = 'overview';
       render();
-    });
+    };
     document.getElementById('sign-out').onclick = (e) => { e.preventDefault(); signOut(); };
   }
 
@@ -200,7 +199,7 @@
             <tbody>${rows}</tbody>
           </table></div>
         </div>`}
-    `, 'weddings');
+    `);
 
     app.querySelectorAll('[data-open]').forEach((row) => row.onclick = () => openWedding(row.dataset.open));
     const btn = document.getElementById('new-wedding-btn'); if (btn) btn.onclick = openNewWeddingModal;
@@ -291,7 +290,7 @@
       </div>
       <div class="subtabs">${tabs.map(([k, label]) => `<div class="subtab ${state.tab === k ? 'active' : ''}" data-tab="${k}">${label}</div>`).join('')}</div>
       <div id="tab-body"></div>
-    `, 'weddings');
+    `);
 
     document.getElementById('back-to-weddings').onclick = (e) => { e.preventDefault(); state.weddingId = null; render(); };
     app.querySelectorAll('[data-tab]').forEach((el) => el.onclick = () => { state.tab = el.dataset.tab; rerenderTabBody(); app.querySelectorAll('[data-tab]').forEach(t => t.classList.toggle('active', t.dataset.tab === state.tab)); });

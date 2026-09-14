@@ -125,22 +125,18 @@ label { display: block; font-family: var(--font-body); font-weight: 600; font-si
 .toggle .toggle-label { font-size: 0.9rem; font-weight: 600; }
 .toggle .toggle-sub { font-size: 0.78rem; color: var(--muted); }
 
-/* ---------- App shell ---------- */
-.app-shell { display: grid; grid-template-columns: 226px minmax(0, 1fr); min-height: 100vh; }
-.sidebar {
-  background: var(--surface); border-right: 1px solid var(--border);
-  padding: 20px 12px; display: flex; flex-direction: column; gap: 3px;
+/* ---------- App header — a slim top bar instead of a sidebar. With only
+   one real destination (Weddings), a sidebar nav was just furniture; the
+   brand doubles as the "back to all weddings" link, and account/sign-out
+   moved up here instead of the bottom of a column that no longer exists. ---------- */
+.app-header {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+  padding: 14px 34px; background: var(--surface); border-bottom: 1px solid var(--border);
 }
-.brand { font-family: var(--font-title); font-size: 2.1rem; font-weight: 400; letter-spacing: 0; padding: 0 10px 18px; border-bottom: 1px solid var(--border); margin-bottom: 14px; line-height: 1; }
-.brand small { display: block; font-family: var(--font-body); font-weight: 500; font-size: 0.68rem; letter-spacing: 0.03em; color: var(--muted); text-transform: none; margin-top: 6px; }
-.nav-tab {
-  display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: var(--radius-sm);
-  color: var(--ink-dim); cursor: pointer; font-size: 0.87rem; font-weight: 500; border: 1px solid transparent;
-}
-.nav-tab:hover { background: var(--surface-sunken); text-decoration: none; }
-.nav-tab.active { background: var(--brass-soft); color: var(--brass-soft-ink); font-weight: 600; }
-.nav-tab .nav-icon { width: 17px; height: 17px; flex-shrink: 0; color: currentColor; opacity: 0.85; }
-.sidebar-footer { margin-top: auto; padding-top: 14px; border-top: 1px solid var(--border); font-size: 0.78rem; color: var(--muted); }
+.brand-link { font-family: var(--font-title); font-size: 1.7rem; font-weight: 400; letter-spacing: 0; line-height: 1; color: var(--ink); }
+.brand-link:hover { text-decoration: none; color: var(--brass-hover); }
+.brand-link small { display: block; font-family: var(--font-body); font-weight: 500; font-size: 0.62rem; letter-spacing: 0.03em; color: var(--muted); text-transform: none; margin-top: 3px; }
+.header-account { display: flex; align-items: center; gap: 12px; }
 
 .main { padding: 28px 34px 60px; max-width: 1220px; min-width: 0; }
 .topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 22px; gap: 16px; flex-wrap: wrap; }
@@ -311,11 +307,8 @@ tbody tr:last-child td { border-bottom: none; }
   .seating-layout { grid-template-columns: 1fr; }
 }
 @media (max-width: 880px) {
-  .app-shell { grid-template-columns: 1fr; }
-  .sidebar { position: sticky; top: 0; z-index: 10; flex-direction: row; overflow-x: auto; padding: 10px 12px; align-items: center; gap: 4px; }
-  .brand { display: none; }
-  .sidebar-footer { display: none; }
-  .nav-tab { white-space: nowrap; }
+  .app-header { padding: 12px 16px; position: sticky; top: 0; z-index: 10; }
+  .header-account .hint { display: none; }
   .main { padding: 18px 16px 48px; }
   .card { padding: 16px; }
   .modal { padding: 20px; }

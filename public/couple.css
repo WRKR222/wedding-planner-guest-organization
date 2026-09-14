@@ -1,17 +1,13 @@
 /* ============================================================
-   Wedding stationery suite, v4. Same structural discipline as the planner
+   Wedding stationery suite, v5. Same structural discipline as the planner
    console — smooth-rounded radius scale, layered soft shadows, per-status
-   colored chips instead of one uniform "muted" pill — but now sharing the
-   planner's fixed dark warm-charcoal/brass surface theme instead of a
-   separate light ivory one, so a couple clicking through their companion
-   site and their planner clicking through the dashboard see one consistent
-   product. Still not literally identical: this is the guest-facing
-   surface, so the couple's own primary/accent color and heading font
-   pairing (set inline by couple.js from weddings.theme) still carry the
-   "wedding stationery" identity on top of the shared dark chrome.
-   Structural rules only — --c-primary, --c-accent, --c-heading-font,
-   --c-body-font are set inline by couple.js from weddings.theme, so a new
-   wedding never needs a code change.
+   colored chips instead of one uniform "muted" pill — and still dark, but
+   its own distinct palette (deep aubergine/plum, not the planner's warm
+   charcoal) so the couple's site reads as its own product, not a reskin
+   of the planner dashboard. On top of that fixed chrome, each wedding still
+   gets its own bespoke primary/accent color and Google Font pairing (set
+   inline by couple.js from weddings.theme), picked from a curated list,
+   never a code change.
    ============================================================ */
 :root {
   --c-primary: #3c4f3e;
@@ -19,35 +15,36 @@
   --c-heading-font: 'Alex Brush', cursive;
   --c-body-font: 'Plus Jakarta Sans', sans-serif;
 
-  /* fixed dark chrome — same family as the planner console/sign-in screen */
-  --c-bg: #1c1913;
-  --c-surface: #242019;
-  --c-surface-alt: #2a251d;
-  --c-ink: #f1ead9;
-  --c-muted: #8f8570;
-  --c-border: #3a3225;
-  --c-border-soft: #2a251d;
-  --c-border-strong: #4c4230;
+  /* fixed dark chrome — deep plum/aubergine, distinct from the planner's
+     warm-charcoal palette */
+  --c-bg: #1a1420;
+  --c-surface: #241c2c;
+  --c-surface-alt: #2b2235;
+  --c-ink: #f3ecf5;
+  --c-muted: #a190ab;
+  --c-border: #3d3148;
+  --c-border-soft: #2b2235;
+  --c-border-strong: #4f3f5e;
 
   --c-radius-sm: 10px;
   --c-radius: 14px;
   --c-radius-lg: 20px;
-  --c-shadow-sm: 0 1px 3px rgba(0,0,0,0.25);
-  --c-shadow: 0 8px 24px rgba(0,0,0,0.35);
-  --c-shadow-lg: 0 22px 50px rgba(0,0,0,0.5);
+  --c-shadow-sm: 0 1px 3px rgba(0,0,0,0.3);
+  --c-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  --c-shadow-lg: 0 22px 50px rgba(0,0,0,0.55);
 
   /* per-status chip pairs — same soft-tint-bg + colored-text idea used on
-     the planner console, tuned for a dark surface instead of ivory */
-  --c-confirm: #7ec090; --c-confirm-soft: #1e3324;
-  --c-warn: #e2b768;    --c-warn-soft: #3b2f1a;
-  --c-cue: #e3897d;     --c-cue-soft: #3c211d;
+     the planner console, tuned for this palette */
+  --c-confirm: #86d1a0; --c-confirm-soft: #1f3327;
+  --c-warn: #e8c17a;    --c-warn-soft: #3a301f;
+  --c-cue: #e88a95;     --c-cue-soft: #3a232b;
 }
 * { box-sizing: border-box; }
 html, body { height: 100%; margin: 0; }
 body.couple-body {
   background: var(--c-bg); color: var(--c-ink); font-family: var(--c-body-font);
   font-weight: 300; font-size: 15.5px; line-height: 1.65; -webkit-font-smoothing: antialiased;
-  background-image: radial-gradient(circle at 100% 0%, rgba(255,255,255,0.03), transparent 55%);
+  background-image: radial-gradient(circle at 100% 0%, rgba(255,255,255,0.04), transparent 55%);
 }
 /* Cursive stays reserved for the couple's own name — everywhere else
    (guest names, body copy) uses the plain body font for readability. */
@@ -92,6 +89,21 @@ body.couple-body {
 .c-tab { flex: 1; text-align: center; padding: 10px 12px; border-radius: 999px; font-size: 0.82rem; font-weight: 600; color: var(--c-muted); cursor: pointer; letter-spacing: 0.01em; transition: background .15s, color .15s; }
 .c-tab.active { background: var(--c-primary); color: #f5f1e6; }
 
+/* ---------- Guest list toolbar: search + status/category filters + a
+   live count row, so a large list stays scannable ---------- */
+.c-toolbar { display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px; }
+.c-search-row { display: flex; gap: 8px; }
+.c-search-row .c-input { flex: 1; }
+.c-filter-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.c-chip {
+  font-size: 0.76rem; font-weight: 600; padding: 6px 12px; border-radius: 999px; cursor: pointer; white-space: nowrap;
+  border: 1px solid var(--c-border-strong); background: var(--c-surface-alt); color: var(--c-muted); transition: all .12s;
+}
+.c-chip:hover { color: var(--c-ink); border-color: var(--c-accent); }
+.c-chip.active { background: var(--c-primary); border-color: var(--c-primary); color: #f5f1e6; }
+.c-count-row { display: flex; flex-wrap: wrap; gap: 8px 16px; font-size: 0.78rem; color: var(--c-muted); padding: 2px 2px 4px; }
+.c-count-row strong { color: var(--c-ink); font-weight: 700; }
+
 .c-guest-row { display: flex; justify-content: space-between; align-items: center; padding: 13px 0; border-bottom: 1px solid var(--c-border-soft); gap: 10px; flex-wrap: wrap; }
 .c-guest-row:last-child { border-bottom: none; }
 .c-guest-name-wrap { display: flex; align-items: center; gap: 11px; min-width: 0; }
@@ -126,9 +138,21 @@ body.couple-body {
 .c-offline .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--c-accent); animation: cpulse 1.4s infinite; }
 @keyframes cpulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
 
-.c-fab-add { position: fixed; bottom: 24px; right: 50%; transform: translateX(50%); max-width: 600px; width: calc(100% - 40px); }
+.c-fab-add { position: fixed; bottom: 24px; right: 50%; transform: translateX(50%); max-width: 600px; width: calc(100% - 40px); z-index: 20; }
+
+/* ---------- Modal — same overlay mechanics as the planner console
+   (position:fixed + inset:0, a close button, click-outside-to-dismiss) ---------- */
+.c-modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 60; padding: 20px; backdrop-filter: blur(2px); }
+.c-modal { position: relative; background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--c-radius-lg); padding: 28px; width: 100%; max-width: 440px; max-height: 88vh; overflow: auto; box-shadow: var(--c-shadow-lg); text-align: left; }
+.c-modal-close {
+  position: absolute; top: 12px; right: 12px; width: 30px; height: 30px; border-radius: 50%;
+  display: grid; place-items: center; border: 1px solid var(--c-border-strong); background: var(--c-surface-alt);
+  color: var(--c-muted); font-size: 1.2rem; line-height: 1; cursor: pointer; transition: color .12s, border-color .12s;
+}
+.c-modal-close:hover { color: var(--c-ink); border-color: var(--c-accent); }
 
 .c-seat-table { border: 1px solid var(--c-border); border-radius: var(--c-radius); padding: 16px; margin-bottom: 12px; box-shadow: var(--c-shadow-sm); }
+.c-tables-grid { display: grid; grid-template-columns: 1fr; gap: 0; }
 
 /* Read-only floor plan preview — same spatial concept as the planner's
    editor, just not draggable here. */
@@ -145,7 +169,7 @@ body.couple-body {
 .c-fp-table.round { border-radius: 50%; }
 .c-fp-table.rectangle { border-radius: 6px; }
 .c-fp-landmark {
-  position: absolute; transform: translate(-50%, -50%); background: rgba(36,32,25,0.85); border: 1px dashed var(--c-accent);
+  position: absolute; transform: translate(-50%, -50%); background: rgba(36,28,44,0.88); border: 1px dashed var(--c-accent);
   border-radius: 6px; display: flex; align-items: center; justify-content: center; text-align: center;
   font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; color: var(--c-muted);
   min-width: 40px; min-height: 24px; padding: 3px;
@@ -155,10 +179,16 @@ body.couple-body {
 .c-seat-slot > span:first-child { min-width: 0; overflow-wrap: anywhere; }
 
 /* ---------- Responsive: comfortable at any width, from a small phone up
-   through desktop, without ever needing horizontal scroll ---------- */
-@media (min-width: 720px) {
+   through a wide desktop — the shell widens progressively instead of
+   staying a narrow phone-width column with empty space on either side ---------- */
+@media (min-width: 640px) {
   .c-shell { max-width: 680px; padding-top: 56px; }
   .c-h1 { font-size: 3.4rem; }
+}
+@media (min-width: 1000px) {
+  .c-shell { max-width: 900px; }
+  .c-tables-grid { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
+  .c-tables-grid .c-seat-table { margin-bottom: 0; }
 }
 @media (max-width: 480px) {
   .c-shell { padding: 26px 14px 96px; }
