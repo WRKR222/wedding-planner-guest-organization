@@ -17,6 +17,7 @@ require('../../routes/checkin').register(router);
 require('../../routes/invites').register(router);
 require('../../routes/import').register(router);
 require('../../routes/venue').register(router);
+require('../../routes/assistant').register(router);
 
 function resolvePathname(event) {
   let p = event.path || '/';

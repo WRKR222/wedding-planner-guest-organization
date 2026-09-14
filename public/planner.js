@@ -130,7 +130,27 @@
 
   function signOut() {
     state.token = null; state.planner = null; state.weddingId = null; saveAuth();
+    if (assistant) assistant.hide();
     render();
+  }
+
+  // ---------------------------------------------------------- assistant
+  let assistant = null;
+  function ensureAssistant() {
+    if (!assistant) {
+      assistant = initAssistant({
+        title: 'Callsheet Assistant',
+        placeholder: 'Add a guest, check RSVPs…',
+        getWeddingId: () => state.weddingId,
+        onReply: () => {
+          if (!state.weddingId) return;
+          const store = state.stores[state.weddingId];
+          if (store) store.refresh();
+          rerenderTabBody();
+        },
+      });
+    }
+    return assistant;
   }
 
   // ------------------------------------------------------------- app shell
@@ -154,6 +174,8 @@
       render();
     };
     document.getElementById('sign-out').onclick = (e) => { e.preventDefault(); signOut(); };
+    // The assistant only makes sense with a specific wedding in scope.
+    if (state.weddingId) ensureAssistant().show(); else ensureAssistant().hide();
   }
 
   // ------------------------------------------------------------ dashboard

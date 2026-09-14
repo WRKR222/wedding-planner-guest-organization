@@ -148,6 +148,24 @@
     });
     document.getElementById('c-add-btn').onclick = () => openAddGuest(store);
     drawBody();
+    ensureAssistant().show();
+  }
+
+  // ---------------------------------------------------------- assistant
+  let assistant = null;
+  function ensureAssistant() {
+    if (!assistant) {
+      assistant = initAssistant({
+        title: `${state.wedding.couple_names}'s Assistant`,
+        placeholder: 'Add a guest, check RSVPs…',
+        getWeddingId: () => state.wedding.id,
+        onReply: () => {
+          ensureStore().refresh();
+          if (state.tab === 'guests') drawGuests();
+        },
+      });
+    }
+    return assistant;
   }
 
   function drawBody() {

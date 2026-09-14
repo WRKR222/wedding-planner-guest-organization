@@ -170,4 +170,4 @@ function register(router) {
   });
 }
 
-module.exports = { register, attachSeats };
+module.exports = { register, attachSeats, applyGuestCreate, applyGuestUpdate, applyGuestDelete, applyRsvp };

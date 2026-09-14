@@ -60,6 +60,7 @@ git push -u origin main
    | `SUPABASE_ANON_KEY` | from step 1 |
    | `SUPABASE_SERVICE_ROLE_KEY` | from step 1 — **mark it "sensitive"/server-only if Netlify offers that toggle** |
    | `PLANNER_FALLBACK_PHONE` | optional — the phone number templated into every invite message as the voice-call fallback |
+   | `ANTHROPIC_API_KEY` | optional — powers the "Assistant" chat widget on both the planner console and the couple site (add/edit/remove guests, check RSVPs, by typing instead of clicking). Get one at [console.anthropic.com](https://console.anthropic.com) → API Keys. Leave unset and the rest of the app works fine — the assistant just replies with a setup message until this is added. Usage is billed per message on your Anthropic account, separate from Netlify/Supabase. |
 
 4. Deploy. The build runs `scripts/generate-config.js`, which writes
    `public/config.js` from `SUPABASE_URL`/`SUPABASE_ANON_KEY` — this is what
