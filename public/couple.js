@@ -72,7 +72,20 @@
     state.themeInfo = theme;
     applyTheme(theme.theme, theme.font_pairing);
 
-    if (state.token && state.wedding) return renderApp();
+    if (state.token && state.wedding) {
+      // state.wedding is a snapshot from whenever this browser last logged
+      // in — if the planner has since flipped a module (e.g. turned
+      // Seating off) or postponed/cancelled the wedding, a stale cached
+      // copy would keep showing the old state indefinitely. Refresh the
+      // fields this public endpoint can safely tell us before rendering.
+      state.wedding = {
+        ...state.wedding,
+        couple_names: theme.couple_names, event_date: theme.event_date, venue: theme.venue,
+        wedding_status: theme.wedding_status, seating_enabled: theme.seating_enabled, seating_locked: theme.seating_locked,
+      };
+      localStorage.setItem(weddingKey, JSON.stringify(state.wedding));
+      return renderApp();
+    }
     return renderGate(theme);
   }
 
@@ -118,6 +131,7 @@
   function renderApp() {
     const w = state.wedding;
     const showSeating = w.seating_enabled;
+    if (!showSeating) state.tab = 'guests'; // in case a cached session had it open when seating got turned off
     app.innerHTML = `
       <div class="c-shell">
         <div class="c-header">
@@ -128,10 +142,11 @@
         </div>
         <div id="c-offline" class="c-offline"><span class="dot"></span><span class="msg"></span></div>
         ${w.wedding_status !== 'active' ? `<div class="c-card" style="border-color:var(--c-warn); background:var(--c-warn-soft);"><strong>This wedding is marked ${w.wedding_status}.</strong></div>` : ''}
+        ${showSeating ? `
         <div class="c-tabs">
           <div class="c-tab ${state.tab === 'guests' ? 'active' : ''}" data-ctab="guests">Guest list</div>
-          ${showSeating ? `<div class="c-tab ${state.tab === 'seating' ? 'active' : ''}" data-ctab="seating">Seating</div>` : ''}
-        </div>
+          <div class="c-tab ${state.tab === 'seating' ? 'active' : ''}" data-ctab="seating">Seating</div>
+        </div>` : ''}
         <div id="c-body"></div>
       </div>
       <div class="c-fab-add" id="c-fab" style="display:${state.tab === 'guests' ? 'block' : 'none'};">

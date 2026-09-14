@@ -14,6 +14,10 @@ function register(router) {
     sendJSON(res, 200, {
       couple_names: wedding.couple_names, event_date: wedding.event_date, venue: wedding.venue,
       theme: wedding.theme, font_pairing: pairing, wedding_status: wedding.wedding_status,
+      // Neither is guest data — safe to return pre-login — but both let a
+      // returning session (state.wedding cached from a previous login)
+      // refresh module state instead of trusting a possibly stale cache.
+      seating_enabled: wedding.seating_enabled, seating_locked: wedding.seating_locked,
     });
   });
 
