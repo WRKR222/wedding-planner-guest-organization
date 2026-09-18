@@ -11,24 +11,45 @@ function requireSeatingEnabled(res, wedding) {
 
 function clampPct(v) { return Math.max(0, Math.min(100, Number(v))); }
 
+async function getSeatingOverview(db, wedding) {
+  const [{ data: tables }, { data: assignments }, { data: guests }] = await Promise.all([
+    db.from('tables').select('*').eq('wedding_id', wedding.id).order('table_number'),
+    db.from('seat_assignments').select('*').eq('wedding_id', wedding.id),
+    db.from('guests').select('id, full_name, status').eq('wedding_id', wedding.id).eq('is_deleted', false),
+  ]);
+  const guestById = {};
+  (guests || []).forEach((g) => { guestById[g.id] = g; });
+  const seated = (assignments || []).map((a) => ({ ...a, guest: guestById[a.guest_id] || null }));
+  const seatedIds = new Set((assignments || []).map((a) => a.guest_id));
+  const unseated = (guests || []).filter((g) => !seatedIds.has(g.id));
+  return { seat_granularity: wedding.seat_granularity, seating_locked: wedding.seating_locked, tables: tables || [], assignments: seated, unseated };
+}
+
+async function applyCreateTable(db, wedding, body) {
+  const { count } = await db.from('tables').select('id', { count: 'exact', head: true }).eq('wedding_id', wedding.id);
+  const insert = {
+    wedding_id: wedding.id, table_number: Number(body.table_number) || (count || 0) + 1, seat_count: body.seat_count ? Number(body.seat_count) : null,
+    shape: body.shape === 'rectangle' ? 'rectangle' : 'round',
+    reserved_for: body.reserved_for ? String(body.reserved_for).trim() : null,
+  };
+  // Placed directly on the floor plan (e.g. dropped at a specific canvas
+  // position) vs. created from the plain list view, which leaves it
+  // unplaced until dragged onto the canvas.
+  if (body.pos_x != null && body.pos_y != null) {
+    insert.pos_x = clampPct(body.pos_x); insert.pos_y = clampPct(body.pos_y);
+    insert.width = body.width ? Number(body.width) : (insert.shape === 'round' ? 10 : 14);
+    insert.height = body.height ? Number(body.height) : 8;
+  }
+  const { data: table, error } = await db.from('tables').insert(insert).select().single();
+  if (error) throw error;
+  return table;
+}
+
 function register(router) {
   router.get('/api/weddings/:id/seating', async (req, res, params) => {
     const ctx = await resolveWeddingActor(req, res, params.id);
     if (!ctx) return;
-    const db = admin();
-    const { wedding } = ctx;
-    const [{ data: tables }, { data: assignments }, { data: guests }] = await Promise.all([
-      db.from('tables').select('*').eq('wedding_id', wedding.id).order('table_number'),
-      db.from('seat_assignments').select('*').eq('wedding_id', wedding.id),
-      db.from('guests').select('id, full_name, status').eq('wedding_id', wedding.id).eq('is_deleted', false),
-    ]);
-    const guestById = {};
-    (guests || []).forEach((g) => { guestById[g.id] = g; });
-    const seated = (assignments || []).map((a) => ({ ...a, guest: guestById[a.guest_id] || null }));
-    const seatedIds = new Set((assignments || []).map((a) => a.guest_id));
-    const unseated = (guests || []).filter((g) => !seatedIds.has(g.id));
-
-    sendJSON(res, 200, { seat_granularity: wedding.seat_granularity, seating_locked: wedding.seating_locked, tables: tables || [], assignments: seated, unseated });
+    sendJSON(res, 200, await getSeatingOverview(admin(), ctx.wedding));
   });
 
   router.post('/api/weddings/:id/tables', async (req, res, params, body) => {
@@ -36,25 +57,11 @@ function register(router) {
     if (!ctx) return;
     if (!requireSeatingEnabled(res, ctx.wedding)) return;
     if (ctx.wedding.seating_locked) return sendJSON(res, 409, { error: 'Seating is locked' });
-    const db = admin();
-    const { count } = await db.from('tables').select('id', { count: 'exact', head: true }).eq('wedding_id', ctx.wedding.id);
-    const insert = {
-      wedding_id: ctx.wedding.id, table_number: Number(body.table_number) || (count || 0) + 1, seat_count: body.seat_count ? Number(body.seat_count) : null,
-      shape: body.shape === 'rectangle' ? 'rectangle' : 'round',
-      reserved_for: body.reserved_for ? String(body.reserved_for).trim() : null,
-    };
-    // Placed directly on the floor plan (e.g. dropped at a specific canvas
-    // position) vs. created from the plain list view, which leaves it
-    // unplaced until dragged onto the canvas.
-    if (body.pos_x != null && body.pos_y != null) {
-      insert.pos_x = clampPct(body.pos_x); insert.pos_y = clampPct(body.pos_y);
-      insert.width = body.width ? Number(body.width) : (insert.shape === 'round' ? 10 : 14);
-      insert.height = body.height ? Number(body.height) : 8;
-    }
-    const { data: table, error } = await db.from('tables').insert(insert).select().single();
-    if (error) return sendJSON(res, 500, { error: error.message });
-    pingWedding(ctx.wedding.id);
-    sendJSON(res, 201, table);
+    try {
+      const table = await applyCreateTable(admin(), ctx.wedding, body);
+      pingWedding(ctx.wedding.id);
+      sendJSON(res, 201, table);
+    } catch (e) { sendJSON(res, 500, { error: e.message }); }
   });
 
   // Repositioning on the floor plan, resizing, relabeling, reserving, or
@@ -100,30 +107,11 @@ function register(router) {
     const { wedding, actor } = ctx;
     if (!requireSeatingEnabled(res, wedding)) return;
     if (wedding.seating_locked) return sendJSON(res, 409, { error: 'Seating is locked — unlock it to make changes' });
-    const db = admin();
-    const { data: guest } = await db.from('guests').select('id, category').eq('id', body.guest_id).eq('wedding_id', wedding.id).eq('is_deleted', false).maybeSingle();
-    if (!guest) return sendJSON(res, 404, { error: 'Guest not found' });
-    let warning = null;
-    if (wedding.seat_granularity !== 'seat_only' && body.table_id) {
-      const { data: table } = await db.from('tables').select('id, table_number, reserved_for').eq('id', body.table_id).eq('wedding_id', wedding.id).maybeSingle();
-      if (!table) return sendJSON(res, 404, { error: 'Table not found' });
-      // A reserved table is a hint, not a hard rule — any guest can still
-      // go anywhere — but the planner should know they're
-      // about to seat someone outside the group a table was set aside for.
-      if (table.reserved_for && guest.category && table.reserved_for.toLowerCase() !== String(guest.category).toLowerCase()) {
-        warning = `Table ${table.table_number} is reserved for "${table.reserved_for}" — this guest is tagged "${guest.category}".`;
-      }
-    }
-    const patch = { assigned_by: actor, assigned_at: new Date().toISOString() };
-    if (wedding.seat_granularity !== 'seat_only') patch.table_id = body.table_id || null; else patch.table_id = null;
-    if (wedding.seat_granularity !== 'table_only') patch.seat_number = body.seat_number != null ? Number(body.seat_number) : null; else patch.seat_number = null;
-
-    const { data: assignment, error } = await db.from('seat_assignments')
-      .upsert({ wedding_id: wedding.id, guest_id: guest.id, ...patch }, { onConflict: 'guest_id' })
-      .select().single();
-    if (error) return sendJSON(res, 500, { error: error.message });
-    pingWedding(wedding.id);
-    sendJSON(res, 200, { ...assignment, warning });
+    try {
+      const result = await applyAssignSeat(admin(), wedding, actor, body);
+      pingWedding(wedding.id);
+      sendJSON(res, 200, result);
+    } catch (e) { sendJSON(res, e.status || 500, { error: e.message }); }
   });
 
   router.del('/api/weddings/:id/seating/:guestId', async (req, res, params) => {
@@ -148,4 +136,29 @@ function register(router) {
   });
 }
 
-module.exports = { register };
+async function applyAssignSeat(db, wedding, actor, body) {
+  const { data: guest } = await db.from('guests').select('id, category').eq('id', body.guest_id).eq('wedding_id', wedding.id).eq('is_deleted', false).maybeSingle();
+  if (!guest) { const e = new Error('Guest not found'); e.status = 404; throw e; }
+  let warning = null;
+  if (wedding.seat_granularity !== 'seat_only' && body.table_id) {
+    const { data: table } = await db.from('tables').select('id, table_number, reserved_for').eq('id', body.table_id).eq('wedding_id', wedding.id).maybeSingle();
+    if (!table) { const e = new Error('Table not found'); e.status = 404; throw e; }
+    // A reserved table is a hint, not a hard rule — any guest can still
+    // go anywhere — but the planner should know they're
+    // about to seat someone outside the group a table was set aside for.
+    if (table.reserved_for && guest.category && table.reserved_for.toLowerCase() !== String(guest.category).toLowerCase()) {
+      warning = `Table ${table.table_number} is reserved for "${table.reserved_for}" — this guest is tagged "${guest.category}".`;
+    }
+  }
+  const patch = { assigned_by: actor, assigned_at: new Date().toISOString() };
+  if (wedding.seat_granularity !== 'seat_only') patch.table_id = body.table_id || null; else patch.table_id = null;
+  if (wedding.seat_granularity !== 'table_only') patch.seat_number = body.seat_number != null ? Number(body.seat_number) : null; else patch.seat_number = null;
+
+  const { data: assignment, error } = await db.from('seat_assignments')
+    .upsert({ wedding_id: wedding.id, guest_id: guest.id, ...patch }, { onConflict: 'guest_id' })
+    .select().single();
+  if (error) throw error;
+  return { ...assignment, warning };
+}
+
+module.exports = { register, getSeatingOverview, applyCreateTable, applyAssignSeat };

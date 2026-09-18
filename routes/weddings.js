@@ -43,6 +43,71 @@ async function requireWeddingAccess(req, res, params) {
   return { planner, wedding };
 }
 
+async function applyWeddingUpdate(db, wedding, body) {
+  const patch = {};
+  for (const field of ['couple_names', 'event_date', 'venue', 'rsvp_cutoff']) {
+    if (body[field] !== undefined) patch[field] = body[field];
+  }
+  const { data, error } = await db.from('weddings').update(patch).eq('id', wedding.id).select().single();
+  if (error) throw error;
+  return data;
+}
+
+async function applyModulesPatch(db, wedding, body) {
+  const patch = {};
+  for (const f of ['automation_enabled', 'couple_site_enabled', 'seating_enabled', 'checkin_enabled']) {
+    if (body[f] !== undefined) patch[f] = !!body[f];
+  }
+  if (body.seat_granularity && ['table_only', 'seat_only', 'table_and_seat'].includes(body.seat_granularity)) {
+    patch.seat_granularity = body.seat_granularity;
+  }
+  if (body.reminder_interval_days !== undefined) patch.reminder_interval_days = Number(body.reminder_interval_days) || 21;
+  if (body.max_reminders !== undefined) patch.max_reminders = body.max_reminders === null || body.max_reminders === '' ? null : Number(body.max_reminders);
+
+  let updatedWedding = { ...wedding, ...patch };
+
+  // First time the couple site is turned on, provision access —
+  // reuse the existing code if it already exists.
+  if (patch.couple_site_enabled) {
+    const { data: existing } = await db.from('couple_site_access').select('*').eq('wedding_id', wedding.id).maybeSingle();
+    if (!existing) {
+      if (!updatedWedding.couple_site_slug) {
+        const base = slugify(updatedWedding.couple_names) || 'wedding';
+        patch.couple_site_slug = `${base}-${wedding.id.slice(0, 6)}`;
+      }
+      await db.from('couple_site_access').insert({ wedding_id: wedding.id, access_code: accessCode() });
+    } else if (existing.revoked) {
+      await db.from('couple_site_access').update({ revoked: false }).eq('wedding_id', wedding.id);
+    }
+  }
+
+  const { data, error } = await db.from('weddings').update(patch).eq('id', wedding.id).select().single();
+  if (error) throw error;
+  return data;
+}
+
+async function applyThemePatch(db, wedding, body) {
+  const pairingKeys = FONT_PAIRINGS.map((f) => f.key);
+  const currentTheme = wedding.theme || {};
+  const font_pairing = pairingKeys.includes(body.font_pairing) ? body.font_pairing : currentTheme.font_pairing || 'alexbrush_plusjakarta';
+  const hex = /^#[0-9a-fA-F]{6}$/;
+  const theme = {
+    primary: hex.test(body.primary) ? body.primary : currentTheme.primary || '#3c4f3e',
+    accent: hex.test(body.accent) ? body.accent : currentTheme.accent || '#b8935a',
+    font_pairing,
+  };
+  const { data, error } = await db.from('weddings').update({ theme }).eq('id', wedding.id).select().single();
+  if (error) throw error;
+  return data;
+}
+
+async function applyStatusChange(db, wedding, status) {
+  if (!['active', 'postponed', 'cancelled'].includes(status)) throw new Error('wedding_status must be active, postponed, or cancelled');
+  const { data, error } = await db.from('weddings').update({ wedding_status: status }).eq('id', wedding.id).select().single();
+  if (error) throw error;
+  return data;
+}
+
 function register(router) {
   router.get('/api/font-pairings', (req, res) => sendJSON(res, 200, FONT_PAIRINGS));
 
@@ -117,80 +182,40 @@ function register(router) {
   router.patch('/api/weddings/:id', async (req, res, params, body) => {
     const ctx = await requireWeddingAccess(req, res, params);
     if (!ctx) return;
-    const patch = {};
-    for (const field of ['couple_names', 'event_date', 'venue', 'rsvp_cutoff']) {
-      if (body[field] !== undefined) patch[field] = body[field];
-    }
-    const { data: wedding, error } = await admin().from('weddings').update(patch).eq('id', ctx.wedding.id).select().single();
-    if (error) return sendJSON(res, 500, { error: error.message });
-    sendJSON(res, 200, await weddingSummary(wedding));
+    try {
+      const wedding = await applyWeddingUpdate(admin(), ctx.wedding, body);
+      sendJSON(res, 200, await weddingSummary(wedding));
+    } catch (e) { sendJSON(res, 500, { error: e.message }); }
   });
 
   // Module toggles. Enabling a module never touches existing data.
   router.patch('/api/weddings/:id/modules', async (req, res, params, body) => {
     const ctx = await requireWeddingAccess(req, res, params);
     if (!ctx) return;
-    const db = admin();
-    const patch = {};
-    for (const f of ['automation_enabled', 'couple_site_enabled', 'seating_enabled', 'checkin_enabled']) {
-      if (body[f] !== undefined) patch[f] = !!body[f];
-    }
-    if (body.seat_granularity && ['table_only', 'seat_only', 'table_and_seat'].includes(body.seat_granularity)) {
-      patch.seat_granularity = body.seat_granularity;
-    }
-    if (body.reminder_interval_days !== undefined) patch.reminder_interval_days = Number(body.reminder_interval_days) || 21;
-    if (body.max_reminders !== undefined) patch.max_reminders = body.max_reminders === null || body.max_reminders === '' ? null : Number(body.max_reminders);
-
-    let wedding = { ...ctx.wedding, ...patch };
-
-    // First time the couple site is turned on, provision access —
-    // reuse the existing code if it already exists.
-    if (patch.couple_site_enabled) {
-      const { data: existing } = await db.from('couple_site_access').select('*').eq('wedding_id', ctx.wedding.id).maybeSingle();
-      if (!existing) {
-        if (!wedding.couple_site_slug) {
-          const base = slugify(wedding.couple_names) || 'wedding';
-          patch.couple_site_slug = `${base}-${wedding.id.slice(0, 6)}`;
-        }
-        await db.from('couple_site_access').insert({ wedding_id: wedding.id, access_code: accessCode() });
-      } else if (existing.revoked) {
-        await db.from('couple_site_access').update({ revoked: false }).eq('wedding_id', wedding.id);
-      }
-    }
-
-    const { data: updated, error } = await db.from('weddings').update(patch).eq('id', ctx.wedding.id).select().single();
-    if (error) return sendJSON(res, 500, { error: error.message });
-    sendJSON(res, 200, await weddingSummary(updated));
+    try {
+      const wedding = await applyModulesPatch(admin(), ctx.wedding, body);
+      sendJSON(res, 200, await weddingSummary(wedding));
+    } catch (e) { sendJSON(res, 500, { error: e.message }); }
   });
 
   // Bespoke branding: curated colors + a Google Font pairing only
   router.patch('/api/weddings/:id/theme', async (req, res, params, body) => {
     const ctx = await requireWeddingAccess(req, res, params);
     if (!ctx) return;
-    const pairingKeys = FONT_PAIRINGS.map((f) => f.key);
-    const currentTheme = ctx.wedding.theme || {};
-    const font_pairing = pairingKeys.includes(body.font_pairing) ? body.font_pairing : currentTheme.font_pairing || 'alexbrush_plusjakarta';
-    const hex = /^#[0-9a-fA-F]{6}$/;
-    const theme = {
-      primary: hex.test(body.primary) ? body.primary : currentTheme.primary || '#3c4f3e',
-      accent: hex.test(body.accent) ? body.accent : currentTheme.accent || '#b8935a',
-      font_pairing,
-    };
-    const { data: wedding, error } = await admin().from('weddings').update({ theme }).eq('id', ctx.wedding.id).select().single();
-    if (error) return sendJSON(res, 500, { error: error.message });
-    sendJSON(res, 200, await weddingSummary(wedding));
+    try {
+      const wedding = await applyThemePatch(admin(), ctx.wedding, body);
+      sendJSON(res, 200, await weddingSummary(wedding));
+    } catch (e) { sendJSON(res, 500, { error: e.message }); }
   });
 
   // Postpone/cancel/reactivate. Freezes automation + seating writes; keeps history.
   router.patch('/api/weddings/:id/status', async (req, res, params, body) => {
     const ctx = await requireWeddingAccess(req, res, params);
     if (!ctx) return;
-    if (!['active', 'postponed', 'cancelled'].includes(body.wedding_status)) {
-      return sendJSON(res, 400, { error: 'wedding_status must be active, postponed, or cancelled' });
-    }
-    const { data: wedding, error } = await admin().from('weddings').update({ wedding_status: body.wedding_status }).eq('id', ctx.wedding.id).select().single();
-    if (error) return sendJSON(res, 500, { error: error.message });
-    sendJSON(res, 200, await weddingSummary(wedding));
+    try {
+      const wedding = await applyStatusChange(admin(), ctx.wedding, body.wedding_status);
+      sendJSON(res, 200, await weddingSummary(wedding));
+    } catch (e) { sendJSON(res, 400, { error: e.message }); }
   });
 
   // Couple-site credential management — planner-only.
@@ -223,4 +248,7 @@ function register(router) {
   });
 }
 
-module.exports = { register, weddingSummary, requireWeddingAccess, FONT_PAIRINGS };
+module.exports = {
+  register, weddingSummary, requireWeddingAccess, FONT_PAIRINGS,
+  applyWeddingUpdate, applyModulesPatch, applyThemePatch, applyStatusChange,
+};
