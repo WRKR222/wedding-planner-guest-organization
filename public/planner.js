@@ -148,6 +148,7 @@
           if (store) store.refresh();
           rerenderTabBody();
         },
+        onUnauthorized: () => signOut(),
       });
     }
     return assistant;

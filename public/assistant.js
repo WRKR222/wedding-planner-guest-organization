@@ -69,6 +69,15 @@ function initAssistant(opts) {
       if (opts.onReply) opts.onReply();
     } catch (err) {
       pending.remove();
+      // A 401 here means the session the page thinks is valid has expired
+      // or been revoked server-side — the fix is signing in again, not a
+      // retry, so hand off to the page instead of dead-ending in the chat.
+      if (err.status === 401 && opts.onUnauthorized) {
+        addBubble('assistant err', "You've been signed out — please sign in again.");
+        togglePanel(false);
+        opts.onUnauthorized();
+        return;
+      }
       addBubble('assistant err', err.message || 'Something went wrong.');
     }
   };

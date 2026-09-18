@@ -178,6 +178,17 @@
           ensureStore().refresh();
           if (state.tab === 'guests') drawGuests();
         },
+        onUnauthorized: () => {
+          // The couple-site session (12h TTL) has expired or been revoked —
+          // clear the stale local copy and drop back to the passcode gate
+          // instead of leaving the app stuck showing content it can no
+          // longer actually fetch.
+          state.token = null; state.wedding = null;
+          localStorage.removeItem(tokenKey); localStorage.removeItem(weddingKey);
+          if (state.store) { state.store.stopPolling(); state.store = null; }
+          assistant.hide();
+          renderGate(state.themeInfo || {});
+        },
       });
     }
     return assistant;
