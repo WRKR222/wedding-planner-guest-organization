@@ -15,6 +15,9 @@
 
   Api.setTokenGetter(() => state.token);
 
+  const ICON_EYE = '<svg viewBox="0 0 20 20" width="18" height="18" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 10s3.5-6 9-6 9 6 9 6-3.5 6-9 6-9-6-9-6z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><circle cx="10" cy="10" r="2.5" stroke="currentColor" stroke-width="1.5"/></svg>';
+  const ICON_EYE_OFF = '<svg viewBox="0 0 20 20" width="18" height="18" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 10s3.5-6 9-6 9 6 9 6-3.5 6-9 6-9-6-9-6z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><circle cx="10" cy="10" r="2.5" stroke="currentColor" stroke-width="1.5"/><line x1="2" y1="18" x2="18" y2="2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>';
+
   function loadJSON(k, d) { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch (e) { return d; } }
   function saveAuth() {
     if (state.token) localStorage.setItem('wrsvp:planner:token', state.token);
@@ -76,7 +79,10 @@
             </div>
             <div class="field">
               <label>Password</label>
-              <input name="password" type="password" required minlength="6" value="demo1234" />
+              <div style="position:relative;">
+                <input name="password" id="auth-password" type="password" required minlength="6" value="demo1234" style="padding-right:42px;" />
+                <button type="button" id="toggle-password" aria-label="Show password" style="position:absolute; top:0; bottom:0; right:2px; width:36px; background:none; border:none; cursor:pointer; color:var(--muted); display:flex; align-items:center; justify-content:center;">${ICON_EYE}</button>
+              </div>
             </div>
             <div id="auth-error" style="color:var(--cue); font-size:0.82rem; margin-bottom:10px;"></div>
             <button class="btn btn-primary" type="submit" style="width:100%; justify-content:center;">Sign in</button>
@@ -88,6 +94,14 @@
         </div>
       </main>`;
     let mode = 'login';
+    document.getElementById('toggle-password').onclick = () => {
+      const input = document.getElementById('auth-password');
+      const btn = document.getElementById('toggle-password');
+      const showing = input.type === 'text';
+      input.type = showing ? 'password' : 'text';
+      btn.innerHTML = showing ? ICON_EYE : ICON_EYE_OFF;
+      btn.setAttribute('aria-label', showing ? 'Show password' : 'Hide password');
+    };
     document.getElementById('auth-switch').onclick = (e) => {
       e.preventDefault();
       mode = mode === 'login' ? 'signup' : 'login';
@@ -142,11 +156,17 @@
         title: 'Callsheet Assistant',
         placeholder: 'Add a guest, check RSVPs…',
         getWeddingId: () => state.weddingId,
-        onReply: () => {
+        onReply: async () => {
           if (!state.weddingId) return;
           const store = state.stores[state.weddingId];
           if (store) store.refresh();
-          rerenderTabBody();
+          // The assistant can change the wedding row itself (modules,
+          // status, details, branding) — refetch it and do a full
+          // re-render, same as the module toggles / settings form do
+          // after their own save, instead of just redrawing the current
+          // tab with the now-stale state.wedding still in memory.
+          try { state.wedding = await Api.get(`/api/weddings/${state.weddingId}`); } catch (e) { return; }
+          renderWeddingDetail();
         },
         onUnauthorized: () => signOut(),
       });
